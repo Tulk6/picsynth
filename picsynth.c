@@ -1,10 +1,13 @@
+//TODO: interpolation
+
 #define WAVE_TABLE_LEN 2048
 #define SAMPLES_PER_BUFFER 256
-#define SAMPLE_RATE 24000
+#define SAMPLE_RATE 22000
 
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <inttypes.h>
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
@@ -15,6 +18,8 @@
 #include "oscillator.c"
 #include "envelope.c"
 #include "operator.c"
+#include "sample.c"
+#include "scale.c"
 
 
 bi_decl(bi_3pins_with_names(
@@ -82,8 +87,25 @@ struct audio_buffer_pool *init_audio(void) {
 int main(void) {
     stdio_init_all();
 
+    /*while (true){
+        if (getchar_timeout_us(0) >= 0) break;
+    }*/
+
     struct WaveTable sine_wave;
-    load_wavetable_sine(&sine_wave, WAVE_TABLE_LEN);
+    wavetable_init(&sine_wave);
+    wavetable_load_sine(&sine_wave, WAVE_TABLE_LEN);
+
+    struct WaveTable square_wave;
+    wavetable_init(&square_wave);
+    wavetable_load_square(&square_wave, WAVE_TABLE_LEN);
+
+    struct WaveTable ad_envelope;
+    wavetable_init(&ad_envelope);
+    wavetable_load_ad(&ad_envelope, 512, 512);
+    
+    struct WaveTable sample;
+    sample.table = sample_wave;
+    sample.table_len = 61791;
 
     struct audio_buffer_pool *ap = init_audio();
 
@@ -92,14 +114,47 @@ int main(void) {
     uint32_t pos_max = 0x10000 * SINE_WAVE_TABLE_LEN;
     uint vol = 32;*/
 
-    struct Oscillator oscillator1;
-    oscillator1.pos = 0;
-    oscillator1.start_pos = 0;
-    oscillator1.pos_max = WAVE_TABLE_LEN<<16;
-    oscillator1.step = 0x200000;
-    oscillator1.vol = 32;
-    oscillator1.wavetable = &sine_wave;
-    oscillator_set_frequency(&oscillator1, 440);
+    uint note = 45;
+    struct Oscillator oscillator;
+    oscillator_init(&oscillator);
+    oscillator_load(&oscillator, &sine_wave);
+    oscillator_set_frequency(&oscillator, scale_get_frequency_i(45));
+    oscillator.loop_type = FORWARD;
+
+    struct Oscillator envelope;
+    oscillator_init(&envelope);
+    oscillator_load(&envelope, &ad_envelope);
+    oscillator_set_frequency(&envelope, 2);
+    envelope.loop_type = NO_LOOP;
+
+    float mod_ratio = 0.5;
+    struct Oscillator modulator;
+    oscillator_init(&modulator);
+    oscillator_load(&modulator, &sine_wave);
+    oscillator_set_frequency(&modulator, scale_get_frequency_i(note)*mod_ratio);
+    modulator.loop_type = FORWARD;
+
+    float sample_frequency = 1;
+    struct Oscillator sample_osc;
+    oscillator_init(&sample_osc);
+    oscillator_load(&sample_osc, &sample);
+    oscillator_set_frequency(&sample_osc, sample_frequency);
+    sample_osc.loop_type = NO_LOOP;
+
+    /*struct Envelope envelope;
+    envelope.vol = 32;
+    envelope.attack = SAMPLE_RATE>>4;
+    envelope.decay = SAMPLE_RATE>>3;
+    envelope.pos = 0;*/
+
+    int mod_strength = 1;
+
+    struct Operator operator;
+    operator.carrier = &oscillator;
+    operator.modulator = &modulator;
+    operator.envelope = NULL;//&envelope;
+    operator.volume = 1024;
+    operator.mod_strength = mod_strength;
 
     /*struct Oscillator oscillator2;
     oscillator2.pos = pos;
@@ -108,36 +163,77 @@ int main(void) {
     oscillator2.vol = vol;
     oscillator2.table = sine_wave_table;*/
 
+    
+
     uint i = 0;
     while (true) {
         int c = getchar_timeout_us(0);
-        i += 1;
-
         if (c >= 0) {
-            if (c == '0')
-                oscillator1.vol = 0;
-            if (c == '1')
-                oscillator1.vol = 64;
-            if (c == 'a')
-                oscillator_set_frequency(&oscillator1, 440);
+            envelope.state = PLAYING;
+            envelope.pos = 0;
+            sample_osc.pos = 0;
+            sample_osc.state = PLAYING;  
 
+            if (c=='e'){
+                mod_ratio += 0.1;
+                oscillator_set_frequency(&modulator, scale_get_frequency_i(note)*mod_ratio);
+            }
+            if (c=='d'){
+                if (mod_ratio > 0.1) mod_ratio -= 0.1;
+                oscillator_set_frequency(&modulator, scale_get_frequency_i(note)*mod_ratio);
+            }
+
+            if (c=='w'){
+                mod_strength += 1;
+                operator.mod_strength = mod_strength;
+            }
+            if (c=='s'){
+                if (mod_strength > 1) mod_strength -= 1;
+                operator.mod_strength = mod_strength;
+            }
+
+            printf("mod ratio: %f\tmod_strength: %d\n", mod_ratio, mod_strength);
+
+            /*if (c=='z'){
+                note += 1;
+                sample_frequency += 0.1;
+                oscillator_set_frequency(&sample_osc, sample_frequency);
+                //oscillator_set_frequency(&oscillator, scale_get_frequency_i(note));
+            }
+
+            if (c=='x'){
+                if (note > 0) note -= 1;
+                if (sample_frequency > 0.1) sample_frequency -= 0.1;
+                oscillator_set_frequency(&sample_osc, sample_frequency);
+                //oscillator_set_frequency(&oscillator, scale_get_frequency_i(note));
+            }*/
+                      
+            /*if (c == 'a')
+                oscillator_set_frequency(&oscillator, 440);
+                oscillator_set_frequency(&modulator, 440);
             if (c == 'b')
-                oscillator_set_frequency(&oscillator1, 494);
-
+                oscillator_set_frequency(&oscillator, 494);
+                oscillator_set_frequency(&modulator, 494);
             if (c == 'c')
-                oscillator_set_frequency(&oscillator1, 523);
+                oscillator_set_frequency(&oscillator, 523);
+                oscillator_set_frequency(&modulator, 523);
             
             if (c == 'd')
-                oscillator_set_frequency(&oscillator1, 587);
+                oscillator_set_frequency(&oscillator, 587);
+                oscillator_set_frequency(&modulator, 587);
             
             if (c == 'e')
-                oscillator_set_frequency(&oscillator1, 659);
+                oscillator_set_frequency(&oscillator, 659);
+                oscillator_set_frequency(&modulator, 659);
 
             if (c == 'f')
-                oscillator_set_frequency(&oscillator1, 698);
+                oscillator_set_frequency(&oscillator, 698);
+                oscillator_set_frequency(&modulator, 698);
 
             if (c == 'g')
-                oscillator_set_frequency(&oscillator1, 392);
+                oscillator_set_frequency(&oscillator, 392);
+                oscillator_set_frequency(&modulator, 392);
+            */
 
             if (c == 'q')
                 break;
@@ -149,9 +245,10 @@ int main(void) {
         int16_t *samples =
             (int16_t *)buffer->buffer->bytes;
 
-        oscillator_set_frequency(&oscillator1, 440*(0.2*sinf(i*i)+1));
+        //oscillator_set_frequency(&oscillator1, 440*(0.2*sinf(i*i)+1));
 
-        oscillator_get_samples(&oscillator1, samples, buffer->max_sample_count);
+        //oscillator_get_samples(&oscillator, samples, buffer->max_sample_count);
+        operator_get_samples(&operator, samples, buffer->max_sample_count);
 
         //add_samples(&oscillator2, samples, buffer->max_sample_count);
 
