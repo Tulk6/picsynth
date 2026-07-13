@@ -44,7 +44,9 @@ void oscillator_set_pos(struct Oscillator* oscillator, uint32_t new_pos){
                 oscillator->state = STOPPED;
                 break;
             case FORWARD:
-                new_pos -= (oscillator->pos_stop-oscillator->pos_start);
+                while (new_pos >= oscillator->pos_stop){
+                    new_pos -= (oscillator->pos_stop-oscillator->pos_start);
+                }
                 break;
         }
     }
@@ -65,5 +67,7 @@ void oscillator_get_samples(struct Oscillator* oscillator, int16_t* samples, uin
 }
 
 void oscillator_set_frequency(struct Oscillator* oscillator, float frequency){
-    oscillator->step = ((uint64_t) (frequency*65536)*oscillator->wavetable->table_len)/((uint32_t) SAMPLE_RATE);
+    oscillator->step = ((uint64_t) (frequency*65536)*oscillator->wavetable->table_len)/((uint32_t) (SAMPLE_RATE*oscillator->wavetable->frequency));
+    printf("freq: %f\n", frequency);
+    printf("step: %f\n", (float)oscillator->step/65536);
 }

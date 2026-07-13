@@ -3,7 +3,8 @@ struct Operator {
     struct Oscillator* modulator;
     struct Oscillator* envelope;
     int16_t volume;
-    int mod_strength;
+    //values are arbitrary rlly
+    int16_t mod_strength;
 };
 
 int16_t operator_get_next_sample(struct Operator* operator){
@@ -16,8 +17,9 @@ int16_t operator_get_next_sample(struct Operator* operator){
         //make modulation work in ratios of the base step size
         //i.e. perhaps full is double step size etc
         //or even reverse -> as approach zero, greater ratio
+        //0.0294468762435
         int16_t modulator_level = oscillator_get_next_sample(operator->modulator);
-        int32_t step_size = operator->mod_strength*((modulator_level*operator->carrier->step)>>15);
+        int32_t step_size = (operator->mod_strength*modulator_level)>>2;
         oscillator_set_pos(operator->carrier, operator->carrier->pos+step_size);
         /*operator->carrier->pos += modulator_level;
         if (operator->carrier->pos > operator->carrier->pos_stop){

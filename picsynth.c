@@ -1,4 +1,5 @@
 //TODO: interpolation
+//FIX SCALE GEN -> sharps + flats
 
 #define WAVE_TABLE_LEN 2048
 #define SAMPLES_PER_BUFFER 256
@@ -11,6 +12,7 @@
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
+#include "hardware/gpio.h"
 #include "pico/binary_info.h"
 #include "pico/audio_i2s.h"
 
@@ -20,6 +22,7 @@
 #include "operator.c"
 #include "sample.c"
 #include "scale.c"
+#include "input.c"
 
 
 bi_decl(bi_3pins_with_names(
@@ -86,6 +89,7 @@ struct audio_buffer_pool *init_audio(void) {
 
 int main(void) {
     stdio_init_all();
+    input_init();
 
     /*while (true){
         if (getchar_timeout_us(0) >= 0) break;
@@ -101,11 +105,12 @@ int main(void) {
 
     struct WaveTable ad_envelope;
     wavetable_init(&ad_envelope);
-    wavetable_load_ad(&ad_envelope, 512, 512);
+    wavetable_load_ad(&ad_envelope, 100, 900);
     
     struct WaveTable sample;
     sample.table = sample_wave;
-    sample.table_len = 61791;
+    sample.table_len = 3976;
+    sample.frequency = 130.8128;
 
     struct audio_buffer_pool *ap = init_audio();
 
@@ -118,20 +123,20 @@ int main(void) {
     struct Oscillator oscillator;
     oscillator_init(&oscillator);
     oscillator_load(&oscillator, &sine_wave);
-    oscillator_set_frequency(&oscillator, scale_get_frequency_i(45));
+    oscillator_set_frequency(&oscillator, 400);
     oscillator.loop_type = FORWARD;
 
     struct Oscillator envelope;
     oscillator_init(&envelope);
     oscillator_load(&envelope, &ad_envelope);
-    oscillator_set_frequency(&envelope, 2);
+    oscillator_set_frequency(&envelope, 0.5);
     envelope.loop_type = NO_LOOP;
 
-    float mod_ratio = 0.5;
+    float mod_ratio = 1;
     struct Oscillator modulator;
     oscillator_init(&modulator);
     oscillator_load(&modulator, &sine_wave);
-    oscillator_set_frequency(&modulator, scale_get_frequency_i(note)*mod_ratio);
+    oscillator_set_frequency(&modulator, 200);
     modulator.loop_type = FORWARD;
 
     float sample_frequency = 1;
@@ -150,11 +155,11 @@ int main(void) {
     int mod_strength = 1;
 
     struct Operator operator;
-    operator.carrier = &oscillator;
-    operator.modulator = &modulator;
+    operator.carrier = &sample_osc;
+    operator.modulator = NULL;//&modulator;
     operator.envelope = NULL;//&envelope;
-    operator.volume = 1024;
-    operator.mod_strength = mod_strength;
+    operator.volume = 4096;
+    operator.mod_strength = 0;
 
     /*struct Oscillator oscillator2;
     oscillator2.pos = pos;
@@ -167,7 +172,31 @@ int main(void) {
 
     uint i = 0;
     while (true) {
-        int c = getchar_timeout_us(0);
+        input_read();
+        if (input_just_pressed()){
+            envelope.state = PLAYING;
+            envelope.pos = 0;
+            sample_osc.pos = 0;
+            sample_osc.state = PLAYING;
+        }
+
+        if (input_button_state(0)){
+            oscillator_set_frequency(&sample_osc, 587.3295);
+        }
+        if (input_button_state(1)){
+            oscillator_set_frequency(&sample_osc, 659.4565);
+        }
+        if (input_button_state(2)){
+            oscillator_set_frequency(&sample_osc, 783.9909);
+        }
+        if (input_button_state(3)){
+            oscillator_set_frequency(&sample_osc, 880);
+        }
+        if (input_button_state(4)){
+            oscillator_set_frequency(&sample_osc, 987.7666);
+        }
+
+        /*int c = getchar_timeout_us(0);
         if (c >= 0) {
             envelope.state = PLAYING;
             envelope.pos = 0;
@@ -175,11 +204,11 @@ int main(void) {
             sample_osc.state = PLAYING;  
 
             if (c=='e'){
-                mod_ratio += 0.1;
+                mod_ratio += 1;
                 oscillator_set_frequency(&modulator, scale_get_frequency_i(note)*mod_ratio);
             }
             if (c=='d'){
-                if (mod_ratio > 0.1) mod_ratio -= 0.1;
+                if (mod_ratio > 1) mod_ratio -= 1;
                 oscillator_set_frequency(&modulator, scale_get_frequency_i(note)*mod_ratio);
             }
 
@@ -192,9 +221,16 @@ int main(void) {
                 operator.mod_strength = mod_strength;
             }
 
+            if (c=='f'){
+                note += 1
+            }
+            if (c=='g'){
+                note -= 1
+            }
+
             printf("mod ratio: %f\tmod_strength: %d\n", mod_ratio, mod_strength);
 
-            /*if (c=='z'){
+            if (c=='z'){
                 note += 1;
                 sample_frequency += 0.1;
                 oscillator_set_frequency(&sample_osc, sample_frequency);
@@ -206,9 +242,9 @@ int main(void) {
                 if (sample_frequency > 0.1) sample_frequency -= 0.1;
                 oscillator_set_frequency(&sample_osc, sample_frequency);
                 //oscillator_set_frequency(&oscillator, scale_get_frequency_i(note));
-            }*/
+            }
                       
-            /*if (c == 'a')
+            if (c == 'a')
                 oscillator_set_frequency(&oscillator, 440);
                 oscillator_set_frequency(&modulator, 440);
             if (c == 'b')
@@ -233,11 +269,11 @@ int main(void) {
             if (c == 'g')
                 oscillator_set_frequency(&oscillator, 392);
                 oscillator_set_frequency(&modulator, 392);
-            */
+            
 
             if (c == 'q')
                 break;
-        }
+        }*/
 
         struct audio_buffer *buffer =
             take_audio_buffer(ap, true);
