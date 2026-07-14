@@ -21,13 +21,13 @@ uint input_read(){
         state = state | (button_state<<i);
     }
     //state = gpio_get(11);
-    printf("state: %u\n", state);
+    //printf("state: %u\n", state);
     prev_state = current_state;
     current_state = state;
 }
 
 bool input_just_pressed(){
-    return (current_state != 0) && (prev_state==0);
+    return current_state != prev_state;
 }
 
 bool input_button_state(uint n){
@@ -38,6 +38,10 @@ bool input_button_prev(uint n){
     return (bool) ((prev_state>>n) & 1);
 }
 
-bool input_button_change(uint n){
+bool input_button_pressed(uint n){
     return input_button_state(n) & !input_button_prev(n);
+}
+
+bool input_button_released(uint n){
+    return !input_button_state(n) & input_button_prev(n);
 }

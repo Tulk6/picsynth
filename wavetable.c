@@ -73,3 +73,29 @@ void wavetable_load_ad(struct WaveTable* wavetable, uint32_t attack, uint32_t de
         wavetable->table[i] = level;
     }
 }
+
+void wavetable_load_adsr(struct WaveTable* wavetable, uint32_t attack, uint32_t decay, uint16_t sustain, uint32_t release){
+    int16_t max = INT16_MAX;
+    uint32_t table_len = attack+decay+release+1;
+    wavetable->frequency = 1;
+    wavetable_load(wavetable, table_len);
+    for (int i = 0; i < table_len; i++){
+        int16_t val;
+        if (i < attack){
+            val = (i*max)/attack;
+        }
+        else if (i < (attack+decay)){
+            val = max-((max-sustain)*(i-attack))/(decay);
+        }else if (i == attack+decay){
+            val = sustain;
+        }else if (i < (attack+decay+release)){
+            val = sustain-(sustain*(i-attack-decay))/release;
+        }
+        else{
+            val = 0;
+        }
+        int16_t level = val;
+        printf("val %i\n", val);
+        wavetable->table[i] = level;
+    }
+}

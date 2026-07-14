@@ -1,11 +1,13 @@
 enum LoopType{
     NO_LOOP,
-    FORWARD
+    FORWARD,
+    BAND
 };
 
 enum PlayState{
     STOPPED,
-    PLAYING
+    PLAYING,
+    STOPPING
 };
 
 struct Oscillator{
@@ -13,6 +15,8 @@ struct Oscillator{
     uint32_t pos;
     uint32_t pos_start;
     uint32_t pos_stop;
+    uint32_t loop_start;
+    uint32_t loop_stop;
     enum LoopType loop_type;
     enum PlayState state;
     struct WaveTable* wavetable;
@@ -25,6 +29,9 @@ void oscillator_init(struct Oscillator* oscillator){
 
     oscillator->step = 0;
 
+    oscillator->loop_start = 0;
+    oscillator->loop_stop = 0;
+
     oscillator->loop_type = NO_LOOP;
     oscillator->state = PLAYING;
     
@@ -36,9 +43,21 @@ void oscillator_load(struct Oscillator* oscillator, struct WaveTable* wavetable)
     oscillator->wavetable = wavetable;
 }
 
+struct Oscillator* oscillator_new(){
+    struct Oscillator* oscillator = (struct Oscillator*) malloc(sizeof(struct Oscillator));
+    oscillator_init(oscillator);
+    return oscillator;
+}
+
+void oscillator_unload(struct Oscillator* oscillator){
+    //does not unload wavetables
+    free(oscillator);
+}
+
 void oscillator_set_pos(struct Oscillator* oscillator, uint32_t new_pos){
     if (new_pos >= oscillator->pos_stop){
         switch (oscillator->loop_type){
+            case BAND:
             case NO_LOOP:
                 new_pos = oscillator->pos_stop-1;
                 oscillator->state = STOPPED;
@@ -48,6 +67,13 @@ void oscillator_set_pos(struct Oscillator* oscillator, uint32_t new_pos){
                     new_pos -= (oscillator->pos_stop-oscillator->pos_start);
                 }
                 break;
+        }
+    }else if (new_pos >= oscillator->loop_stop){
+        switch (oscillator->loop_type){
+            case BAND:
+                if (oscillator->state == PLAYING){
+                    new_pos = oscillator->loop_start;
+                }
         }
     }
     oscillator->pos = new_pos;
