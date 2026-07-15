@@ -15,6 +15,7 @@ struct Operator {
     int16_t volume;
     int16_t intensity;
     float frequency_ratio;
+    float frequency;
 };
 
 void operator_init(struct Operator* operator){
@@ -61,6 +62,7 @@ void operator_unload(struct Operator* operator){
 }
 
 void operator_set_frequency(struct Operator* operator, float frequency){
+    operator->frequency = frequency;
     switch (operator->mode){
         case OSCILLATOR:
             if (operator->src_wave != NULL){
@@ -73,7 +75,8 @@ void operator_set_frequency(struct Operator* operator, float frequency){
                 operator_set_frequency(operator->carrier, frequency);
             }
             break;
-
+        
+        case ADDITIVE:
         case PHASE_MODULATION:
             if ((operator->carrier != NULL) && (operator->modulator != NULL)){
                 if (operator->frequency_ratio != 0){
@@ -84,6 +87,19 @@ void operator_set_frequency(struct Operator* operator, float frequency){
             }
             break;
     }
+}
+
+void operator_set_frequency_ratio(struct Operator* operator, float frequency_ratio){
+    operator->frequency_ratio = frequency_ratio;
+    operator_set_frequency(operator->modulator, operator->frequency*frequency_ratio);
+    /*switch (operator->mode){       
+        case ADDITIVE:
+        case PHASE_MODULATION:
+            if ((operator->carrier != NULL) && (operator->modulator != NULL)){
+                operator_set_frequency(operator->modulator, 2*operator_get_frequency(operator->carrier));
+            }
+            break;
+    }*/
 }
 
 void operator_set_pos(struct Operator* operator, uint32_t new_pos){
@@ -138,6 +154,11 @@ int16_t operator_get_next_sample(struct Operator* operator){
             break;
         
         case ADDITIVE:
+            if ((operator->carrier != NULL) && (operator->modulator != NULL)){
+                int16_t carrier_level = operator_get_next_sample(operator->carrier);
+                int16_t modulator_level = (operator->intensity * operator_get_next_sample(operator->modulator))>>15;
+                sample = (carrier_level+modulator_level)>>1;
+            }
             break;
 
         case PHASE_MODULATION:

@@ -1,9 +1,15 @@
 //TODO: interpolation
+//saw wave, triangle wave, etc...
+
 //FIX SCALE GEN -> sharps + flats
 
 #define WAVE_TABLE_LEN 2048
 #define SAMPLES_PER_BUFFER 256
 #define SAMPLE_RATE 22000
+
+//#define PICO_AUDIO_I2S_DATA_PIN
+//#define PICO_AUDIO_I2S_CLOCK_PIN_BASE
+
 
 #include <stdio.h>
 #include <math.h>
@@ -13,15 +19,16 @@
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
 #include "hardware/gpio.h"
+#include "hardware/adc.h"
 #include "pico/binary_info.h"
 #include "pico/audio_i2s.h"
 
 #include "wavetable.c"
+#include "sample.c"
 #include "waves.c"
 #include "oscillator.c"
 #include "envelope.c"
 #include "operator.c"
-#include "sample.c"
 #include "scale.c"
 #include "input.c"
 #include "voices.c"
@@ -97,13 +104,14 @@ int main(void) {
 
     /*while (true){
         if (getchar_timeout_us(0) >= 0) break;
-    }*/
+    }
+    printf("hello!");*/
 
     waves_load();
 
     struct VoiceBank voice_bank;
     voices_init(&voice_bank);
-    voices_load(&voice_bank, 4);
+    voices_load(&voice_bank, 5);
 
     /*struct WaveTable sine_wave;
     wavetable_init(&sine_wave);
@@ -208,20 +216,48 @@ int main(void) {
     oscillator2.table = sine_wave_table;*/
 
     
-
+    int prev_adc = 0;
+    int adc = 0;
     uint i = 0;
     while (true) {
         input_read();
+        /*adc = (input_read_adc()>>9);
+        if (adc != prev_adc){
+            printf("adc: %i\n", adc);
+            prev_adc = adc;
+            voices_set_intensity(&voice_bank, adc);
+        }*/
         if (input_just_pressed()){
             for (int j=0;j<n_buttons;j++){
                 if (input_button_pressed(j)){
-                    struct Operator* operator = voices_acquire(&voice_bank);
-                    operator_set_frequency(operator, scale_get_frequency_i(45+j));
-                    operator_start(operator);
+                    struct Voice* voice = voices_acquire(&voice_bank);
+                    voice->trigger = j;
+                    float freq = 0;
+                    switch (j){
+                        case 0:
+                            freq = scale_get_frequency(Note_C, 3);
+                            break;
+                        case 1:
+                            freq = scale_get_frequency(Note_D, 3);
+                            break;
+                        case 2:
+                            freq = scale_get_frequency(Note_E, 3);
+                            break;
+                        case 3:
+                            freq = scale_get_frequency(Note_F, 3);
+                            break;
+                        case 4:
+                            freq = scale_get_frequency(Note_G, 3);
+                            break;
+                    }
+                    operator_set_frequency(voice->operator, freq);
+                    operator_start(voice->operator);
                 }else if (input_button_released(j)){
                     for (int k=0;k<voice_bank.n_voices;k++){
-                        struct Operator* op = voice_bank.voices[k];
-                        op->envelope->state = STOPPING;
+                        struct Voice* voice = voice_bank.voices[k];
+                        if (voice->trigger==j && voice->operator->envelope->state==PLAYING){
+                            voice->operator->envelope->state = STOPPING;
+                        }
                     }
                     
                 }

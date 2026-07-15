@@ -14,6 +14,18 @@ int16_t wavetable_get_sample(struct WaveTable* wavetable, uint32_t sample_n){
     }
 }
 
+int16_t wavetable_get_sample_interpolated(struct WaveTable* wavetable, uint32_t pos){
+    uint32_t sample_n = pos >> 16;
+    uint32_t sample_n2 = sample_n+1;
+    int32_t crossfade = pos & 0xffff;
+    if (sample_n2>=wavetable->table_len){
+        return (wavetable_get_sample(wavetable, sample_n));
+    }
+    int32_t sample1 = (0xffff-crossfade)*wavetable_get_sample(wavetable, sample_n);
+    int32_t sample2 = crossfade*wavetable_get_sample(wavetable, sample_n2);
+    return (sample1+sample2)>>16;
+}
+
 void wavetable_init(struct WaveTable* wavetable){
     wavetable->table_len = 0;
     wavetable->table = NULL;
@@ -31,6 +43,12 @@ void wavetable_unload(struct WaveTable* wavetable){
     wavetable->table = NULL;
     wavetable->table_len = 0;
     wavetable->frequency = 0;
+}
+
+void wavetable_load_sample(struct WaveTable* wavetable, uint16_t* sample, uint32_t sample_len, float frequency){
+    wavetable_load(wavetable, sample_len);
+    wavetable->table = sample;
+    wavetable->frequency = frequency;
 }
 
 void wavetable_load_sine(struct WaveTable* wavetable, uint32_t table_len){
@@ -95,7 +113,7 @@ void wavetable_load_adsr(struct WaveTable* wavetable, uint32_t attack, uint32_t 
             val = 0;
         }
         int16_t level = val;
-        printf("val %i\n", val);
+        //printf("val %i\n", val);
         wavetable->table[i] = level;
     }
 }

@@ -52,13 +52,14 @@ pico_enable_stdio_usb(picsynth 1)
 # Add the standard library to the build
 target_link_libraries(picsynth
         pico_stdlib
-        pico_audio_i2s)
+        pico_audio_i2s
+        hardware_adc)
 
 target_compile_definitions(picsynth PRIVATE
     # compile time configuration of I2S
     PICO_AUDIO_I2S_MONO_INPUT=1
-    PICO_AUDIO_I2S_DATA_PIN=1
-    PICO_AUDIO_I2S_CLOCK_PIN_BASE=2
+    PICO_AUDIO_I2S_DATA_PIN=20
+    PICO_AUDIO_I2S_CLOCK_PIN_BASE=18
 )
 
 # Add the standard include files to the build

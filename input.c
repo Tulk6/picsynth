@@ -5,12 +5,25 @@ uint current_state = 0;
 uint prev_state = 0;
 
 void input_init(){
+    adc_init();
+    adc_gpio_init(26);
+    adc_select_input(0);
+
     for (int i=0;i<n_buttons;i++){
         uint pin = button_pins[i];
         gpio_init(pin);
         gpio_set_dir(pin, GPIO_IN);
         gpio_pull_up(pin);
     }
+}
+
+uint16_t input_read_adc(){
+    //max 4096
+    //min greater than 0
+    //cheap?? way of quantising more
+    //this does 31 steps cos 4096>>7 = 31
+    uint16_t adc = (adc_read()>>8)<<8;
+    return adc;
 }
 
 uint input_read(){

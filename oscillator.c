@@ -81,7 +81,8 @@ void oscillator_set_pos(struct Oscillator* oscillator, uint32_t new_pos){
 
 int16_t oscillator_get_next_sample(struct Oscillator* oscillator){
     if (oscillator->state == STOPPED) return 0;
-    int16_t sample = (wavetable_get_sample(oscillator->wavetable, oscillator->pos >> 16));
+    //int16_t sample = (wavetable_get_sample(oscillator->wavetable, oscillator->pos>>16));
+    int16_t sample = (wavetable_get_sample_interpolated(oscillator->wavetable, oscillator->pos));
     oscillator_set_pos(oscillator, oscillator->pos+oscillator->step);
     return sample;
 }
@@ -94,6 +95,10 @@ void oscillator_get_samples(struct Oscillator* oscillator, int16_t* samples, uin
 
 void oscillator_set_frequency(struct Oscillator* oscillator, float frequency){
     oscillator->step = ((uint64_t) (frequency*65536)*oscillator->wavetable->table_len)/((uint32_t) (SAMPLE_RATE*oscillator->wavetable->frequency));
-    printf("freq: %f\n", frequency);
-    printf("step: %f\n", (float)oscillator->step/65536);
+    //printf("freq: %f\n", frequency);
+    //printf("step: %f\n", (float)oscillator->step/65536);
+}
+
+float oscillator_get_frequency(struct Oscillator* oscillator){
+    return ( (uint32_t) oscillator->step*SAMPLE_RATE*oscillator->wavetable->frequency)/((uint64_t) (65536*oscillator->wavetable->table_len));
 }
