@@ -20,6 +20,7 @@
 #include "hardware/structs/clocks.h"
 #include "hardware/gpio.h"
 #include "hardware/adc.h"
+#include "hardware/i2c.h"
 #include "pico/binary_info.h"
 #include "pico/audio_i2s.h"
 
@@ -28,10 +29,13 @@
 #include "waves.c"
 #include "oscillator.c"
 #include "envelope.c"
+#include "filter.c"
 #include "operator.c"
 #include "scale.c"
 #include "input.c"
 #include "voices.c"
+#include "lcd_lib.c"
+#include "display.c"
 
 
 bi_decl(bi_3pins_with_names(
@@ -102,10 +106,7 @@ int main(void) {
     
     struct audio_buffer_pool *ap = init_audio();
 
-    /*while (true){
-        if (getchar_timeout_us(0) >= 0) break;
-    }
-    printf("hello!");*/
+    display_init();
 
     waves_load();
 
@@ -216,8 +217,6 @@ int main(void) {
     oscillator2.table = sine_wave_table;*/
 
     
-    int prev_adc = 0;
-    int adc = 0;
     uint i = 0;
     while (true) {
         input_read();
@@ -235,19 +234,19 @@ int main(void) {
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_C, 3);
+                            freq = scale_get_frequency(Note_C, 1);
                             break;
                         case 1:
-                            freq = scale_get_frequency(Note_D, 3);
+                            freq = scale_get_frequency(Note_D, 2);
                             break;
                         case 2:
                             freq = scale_get_frequency(Note_E, 3);
                             break;
                         case 3:
-                            freq = scale_get_frequency(Note_F, 3);
+                            freq = scale_get_frequency(Note_F, 4);
                             break;
                         case 4:
-                            freq = scale_get_frequency(Note_G, 3);
+                            freq = scale_get_frequency(Note_G, 5);
                             break;
                     }
                     operator_set_frequency(voice->operator, freq);
@@ -261,6 +260,25 @@ int main(void) {
                     }
                     
                 }
+            }
+            if (current_state>>5 & 1){
+                voices_set_intensity(&voice_bank, 100);
+                /*voices_set_mode(&voice_bank, CARRIER);
+                lcd_string(&my_lcd, "Carrier Only");*/
+                //voices_set_frequency_ratio(&voice_bank, 0.01);
+            }else if (current_state>>6 & 1){
+                /*lcd_string(&my_lcd, "Phase Modulation");
+                voices_set_intensity(&voice_bank, 2000);
+                voices_set_mode(&voice_bank, RING_MODULATION);*/
+                voices_set_intensity(&voice_bank, 500);
+                //voices_set_frequency_ratio(&voice_bank, 0.5f);
+            }else if (current_state>>7 & 1){
+                voices_set_intensity(&voice_bank, 800);
+                /*
+                lcd_string(&my_lcd, "Additive");
+                voices_set_intensity(&voice_bank, 32767);
+                voices_set_mode(&voice_bank, ADDITIVE);*/
+                //voices_set_frequency_ratio(&voice_bank, 4);
             }
         
 

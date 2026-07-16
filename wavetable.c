@@ -19,7 +19,8 @@ int16_t wavetable_get_sample_interpolated(struct WaveTable* wavetable, uint32_t 
     uint32_t sample_n2 = sample_n+1;
     int32_t crossfade = pos & 0xffff;
     if (sample_n2>=wavetable->table_len){
-        return (wavetable_get_sample(wavetable, sample_n));
+        sample_n2 = sample_n2-wavetable->table_len;
+        //return (wavetable_get_sample(wavetable, sample_n));
     }
     int32_t sample1 = (0xffff-crossfade)*wavetable_get_sample(wavetable, sample_n);
     int32_t sample2 = crossfade*wavetable_get_sample(wavetable, sample_n2);
@@ -70,6 +71,33 @@ void wavetable_load_square(struct WaveTable* wavetable, uint32_t table_len){
         }else{
             val = -32767;
         }
+        wavetable->table[i] = val;
+    }
+}
+
+void wavetable_load_saw(struct WaveTable* wavetable, uint32_t table_len){
+    //erm probs could be improvesd
+    wavetable_load(wavetable, table_len);
+    wavetable->frequency = 1;
+    for (int i = 0; i < table_len; i++) {
+        int16_t val;
+        if (i < table_len>>1){
+            val = ((4*32767*i)/table_len)-32767;
+        }else{
+            val = ((-4*32767*i)/table_len)+(3*32767);
+        }
+        
+        wavetable->table[i] = val;
+    }
+}
+
+void wavetable_load_triangle(struct WaveTable* wavetable, uint32_t table_len){
+    //erm probs could be improvesd
+    wavetable_load(wavetable, table_len);
+    wavetable->frequency = 1;
+    for (int i = 0; i < table_len; i++) {
+        int16_t val;
+        val = ((2*32767*i)/table_len)-32767;
         wavetable->table[i] = val;
     }
 }

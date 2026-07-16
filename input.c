@@ -1,16 +1,26 @@
 uint n_buttons = 5;
 uint button_pins[] = {11, 12, 13, 14, 15};
 
-uint current_state = 0;
-uint prev_state = 0;
+uint selector_pins[] = {8, 9, 10};
+uint n_selectors = 3;
+
+uint8_t current_state = 0;
+uint8_t prev_state = 0;
 
 void input_init(){
-    adc_init();
+    /*adc_init();
     adc_gpio_init(26);
-    adc_select_input(0);
+    adc_select_input(0);*/
 
     for (int i=0;i<n_buttons;i++){
         uint pin = button_pins[i];
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_IN);
+        gpio_pull_up(pin);
+    }
+
+    for (int i=0;i<n_selectors;i++){
+        uint pin = selector_pins[i];
         gpio_init(pin);
         gpio_set_dir(pin, GPIO_IN);
         gpio_pull_up(pin);
@@ -33,6 +43,13 @@ uint input_read(){
         uint button_state = (uint) !(gpio_get(pin));
         state = state | (button_state<<i);
     }
+
+    for (int i=0;i<n_selectors;i++){
+        uint pin = selector_pins[i];
+        uint button_state = (uint) !(gpio_get(pin));
+        state = state | (button_state<<(i+5));
+    }
+
     //state = gpio_get(11);
     //printf("state: %u\n", state);
     prev_state = current_state;

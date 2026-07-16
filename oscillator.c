@@ -79,11 +79,20 @@ void oscillator_set_pos(struct Oscillator* oscillator, uint32_t new_pos){
     oscillator->pos = new_pos;
 }
 
-int16_t oscillator_get_next_sample(struct Oscillator* oscillator){
+int16_t oscillator_advance_sample(struct Oscillator* oscillator){
+    oscillator_set_pos(oscillator, oscillator->pos+oscillator->step);
+}
+
+int16_t oscillator_get_current_sample(struct Oscillator* oscillator){
     if (oscillator->state == STOPPED) return 0;
     //int16_t sample = (wavetable_get_sample(oscillator->wavetable, oscillator->pos>>16));
     int16_t sample = (wavetable_get_sample_interpolated(oscillator->wavetable, oscillator->pos));
-    oscillator_set_pos(oscillator, oscillator->pos+oscillator->step);
+    return sample;
+}
+
+int16_t oscillator_get_next_sample(struct Oscillator* oscillator){
+    int16_t sample = oscillator_get_current_sample(oscillator);
+    oscillator_advance_sample(oscillator);
     return sample;
 }
 

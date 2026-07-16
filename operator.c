@@ -2,6 +2,7 @@ enum OperatorMode {
     MODE_NONE,
     ADDITIVE,
     PHASE_MODULATION,
+    RING_MODULATION,
     OSCILLATOR,
     CARRIER
 };
@@ -11,6 +12,7 @@ struct Operator {
     struct Operator* modulator;
     struct Oscillator* src_wave;
     struct Oscillator* envelope;
+    struct Filter* filter;
     enum OperatorMode mode;
     int16_t volume;
     int16_t intensity;
@@ -23,6 +25,7 @@ void operator_init(struct Operator* operator){
     operator->modulator = NULL;
     operator->src_wave = NULL;
     operator->envelope = NULL;
+    operator->filter = NULL;
     operator->mode = MODE_NONE;
     operator->volume = 0;
     operator->intensity = 0;
@@ -77,6 +80,7 @@ void operator_set_frequency(struct Operator* operator, float frequency){
             break;
         
         case ADDITIVE:
+        case RING_MODULATION:
         case PHASE_MODULATION:
             if ((operator->carrier != NULL) && (operator->modulator != NULL)){
                 if (operator->frequency_ratio != 0){
@@ -141,7 +145,7 @@ void operator_stop(struct Operator* operator){
     }
 }
 
-int16_t operator_get_next_sample(struct Operator* operator){
+int16_t operator_get_current_sample(struct Operator* operator){
     int16_t sample = 0;
     switch (operator->mode){
         case MODE_NONE:
@@ -149,42 +153,76 @@ int16_t operator_get_next_sample(struct Operator* operator){
 
         case OSCILLATOR:
             if (operator->src_wave != NULL){
-                sample = oscillator_get_next_sample(operator->src_wave);
+                sample = oscillator_get_current_sample(operator->src_wave);
             }
             break;
         
         case ADDITIVE:
             if ((operator->carrier != NULL) && (operator->modulator != NULL)){
-                int16_t carrier_level = operator_get_next_sample(operator->carrier);
-                int16_t modulator_level = (operator->intensity * operator_get_next_sample(operator->modulator))>>15;
+                int16_t carrier_level = operator_get_current_sample(operator->carrier);
+                int16_t modulator_level = (operator->intensity * operator_get_current_sample(operator->modulator))>>15;
                 sample = (carrier_level+modulator_level)>>1;
             }
             break;
 
         case PHASE_MODULATION:
             if ((operator->carrier != NULL) && (operator->modulator != NULL)){
-                int16_t carrier_level = operator_get_next_sample(operator->carrier);
-                int16_t modulator_level = operator_get_next_sample(operator->modulator);
+                int16_t carrier_level = operator_get_current_sample(operator->carrier);
+                int16_t modulator_level = operator_get_current_sample(operator->modulator);
                 int32_t step_size = (operator->intensity*modulator_level)>>2;
                 operator_change_pos(operator->carrier, step_size);
                 sample = carrier_level;
             }
             break;
 
+        case RING_MODULATION:
+            if ((operator->carrier != NULL) && (operator->modulator != NULL)){
+                int16_t carrier_level = operator_get_current_sample(operator->carrier);
+                int16_t modulator_level = operator_get_current_sample(operator->modulator);
+                sample = (carrier_level*modulator_level)>>15;
+            }
+            break;
+
         case CARRIER:
             if (operator->carrier != NULL){
-                sample = operator_get_next_sample(operator->carrier);
+                sample = operator_get_current_sample(operator->carrier);
             }
             break;
     }
+
+    if (operator->filter != NULL){
+        sample = filter_apply(operator->filter, sample, operator->intensity);
+    }
     
     if (operator->envelope != NULL){
-        int16_t envelope_level = abs(oscillator_get_next_sample(operator->envelope));
-        sample = (sample*envelope_level) >> 15;
+        int16_t envelope_level = abs(oscillator_get_current_sample(operator->envelope));
+        operator->intensity = envelope_level;
+        //sample = (sample*envelope_level) >> 15;
     }
 
     sample = (sample*operator->volume) >> 15;
     if (sample > operator->volume) sample = 0;
+    return sample;
+}
+
+void operator_advance_sample(struct Operator* operator){
+    if (operator->carrier != NULL){
+        operator_advance_sample(operator->carrier);
+    }
+    if (operator->modulator != NULL && operator->modulator != operator->carrier){
+        operator_advance_sample(operator->modulator);
+    }
+    if (operator->envelope != NULL){
+        oscillator_advance_sample(operator->envelope);
+    }
+    if (operator->src_wave != NULL){
+        oscillator_advance_sample(operator->src_wave);
+    }
+}
+
+int16_t operator_get_next_sample(struct Operator* operator){
+    int16_t sample = operator_get_current_sample(operator);
+    operator_advance_sample(operator);
     return sample;
 }
 

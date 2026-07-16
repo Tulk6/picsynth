@@ -53,7 +53,8 @@ pico_enable_stdio_usb(picsynth 1)
 target_link_libraries(picsynth
         pico_stdlib
         pico_audio_i2s
-        hardware_adc)
+        hardware_adc
+        hardware_i2c)
 
 target_compile_definitions(picsynth PRIVATE
     # compile time configuration of I2S
