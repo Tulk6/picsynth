@@ -234,19 +234,19 @@ int main(void) {
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_C, 1);
+                            freq = scale_get_frequency(Note_C, 3);
                             break;
                         case 1:
-                            freq = scale_get_frequency(Note_D, 2);
+                            freq = scale_get_frequency(Note_D, 3);
                             break;
                         case 2:
                             freq = scale_get_frequency(Note_E, 3);
                             break;
                         case 3:
-                            freq = scale_get_frequency(Note_F, 4);
+                            freq = scale_get_frequency(Note_F, 3);
                             break;
                         case 4:
-                            freq = scale_get_frequency(Note_G, 5);
+                            freq = scale_get_frequency(Note_G, 3);
                             break;
                     }
                     operator_set_frequency(voice->operator, freq);

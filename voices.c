@@ -52,7 +52,7 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
 
         struct Oscillator* sample_osc = oscillator_new();
         oscillator_load(sample_osc, &sample_table);
-        sample_osc->loop_type = NO_LOOP;
+        sample_osc->loop_type = FORWARD;
         sample_osc->state = STOPPED;
 
         struct Oscillator* sine_osc = oscillator_new();
