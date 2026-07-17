@@ -61,7 +61,7 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
         sine_osc->state = STOPPED;
 
         struct Oscillator* square_osc = oscillator_new();
-        oscillator_load(square_osc, &square_wave);
+        oscillator_load(square_osc, &noise_wave);
         square_osc->loop_type = FORWARD;
         square_osc->state = STOPPED;
 
@@ -88,6 +88,7 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
 
         struct Filter* filter = filter_new();
         filter->type = TEST;
+        filter->value = 0;
 
         operator->envelope = envelope_osc;
         operator->carrier = square_op;

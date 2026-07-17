@@ -91,6 +91,16 @@ void wavetable_load_saw(struct WaveTable* wavetable, uint32_t table_len){
     }
 }
 
+void wavetable_load_noise(struct WaveTable* wavetable, uint32_t table_len){
+    wavetable_load(wavetable, table_len);
+    wavetable->frequency = 0.01;
+    for (int i = 0; i < table_len; i++) {
+        int16_t val;
+        val = (int16_t) get_rand_32();
+        wavetable->table[i] = val;
+    }
+}
+
 void wavetable_load_triangle(struct WaveTable* wavetable, uint32_t table_len){
     //erm probs could be improvesd
     wavetable_load(wavetable, table_len);

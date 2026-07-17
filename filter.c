@@ -7,17 +7,15 @@ enum FilterType {
 };
 
 struct Filter {
-    int16_t* samples;
     enum FilterType type;
-    uint16_t filter_size; 
-    uint16_t n_samples;
+    int16_t prev_sample;
+    int16_t value;
 };
 
 void filter_init(struct Filter* filter){
-    filter->filter_size = FILTER_LENGTH;
-    filter->samples = calloc(filter->filter_size, sizeof(int16_t));
+    filter->prev_sample = 0;
     filter->type = TEST;
-    filter->n_samples = FILTER_LENGTH;
+    filter->value = 0;
 }
 
 struct Filter* filter_new(){
@@ -26,26 +24,13 @@ struct Filter* filter_new(){
     return filter;
 }
 
-void filter_add_sample(struct Filter* filter, int16_t sample){
-    for (int i=filter->filter_size-1; i>1; i--){
-        filter->samples[i] = filter->samples[i-1];
-    }
-    filter->samples[0] = sample;
-}
-
 int16_t filter_apply(struct Filter* filter, int16_t sample, int16_t cutoff){
     int64_t new_sample = 0;
     switch (filter->type){
         case TEST:
-            int16_t prev_sample;
-            new_sample += sample;
-            for (int i=0;i<filter->n_samples;i++){
-                prev_sample = filter->samples[i];
-                new_sample += prev_sample;
-            }
-            new_sample = new_sample >> 3;
+            new_sample = ((filter->value*sample)>>15) + (((32767-filter->value)*filter->prev_sample)>>15);
             break;
     }
-    filter_add_sample(filter, new_sample);
+    filter->prev_sample = new_sample;
     return new_sample;
 }

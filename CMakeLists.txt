@@ -54,7 +54,8 @@ target_link_libraries(picsynth
         pico_stdlib
         pico_audio_i2s
         hardware_adc
-        hardware_i2c)
+        hardware_i2c
+        pico_rand)
 
 target_compile_definitions(picsynth PRIVATE
     # compile time configuration of I2S

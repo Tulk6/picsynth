@@ -23,6 +23,7 @@
 #include "hardware/i2c.h"
 #include "pico/binary_info.h"
 #include "pico/audio_i2s.h"
+#include "pico/rand.h"
 
 #include "wavetable.c"
 #include "sample.c"
@@ -234,7 +235,7 @@ int main(void) {
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_C, 3);
+                            freq = scale_get_frequency(Note_C, 1);
                             break;
                         case 1:
                             freq = scale_get_frequency(Note_D, 3);
