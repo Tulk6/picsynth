@@ -11,8 +11,30 @@ struct VoiceBank {
 //1 lfo
 
 struct Voice {
-    struct Operator* operator;
-    int trigger;
+    uint8_t trigger;
+    uint8_t group;
+    
+    struct Operator* output_operator;
+    
+    struct Operator* operator_a;
+    struct Operator* operator_b;
+    struct Operator* operator_c;
+    struct Operator* operator_d;
+    struct Operator* operator_e;
+
+    struct Oscillator* oscillator_a;
+    struct Oscillator* oscillator_b;
+    struct Oscillator* oscillator_c;
+    struct Oscillator* oscillator_d;
+    struct Oscillator* oscillator_e;
+    struct Oscillator* oscillator_f;
+
+    struct Oscillator* envelope_a;
+    struct Oscillator* envelope_b;
+
+    struct Oscillator* lfo_a;
+
+    struct Filter* filter_a;
 };
 
 void voices_init(struct VoiceBank* voice_bank){
@@ -20,16 +42,56 @@ void voices_init(struct VoiceBank* voice_bank){
     voice_bank->n_voices = 0;
 }
 
+void voice_init(struct Voice* voice){
+    voice->trigger = 0;
+    voice->group = 0;
+
+    voice->output_operator = NULL;
+
+    voice->operator_a = NULL;
+    voice->operator_b = NULL;
+    voice->operator_c = NULL;
+
+    voice->oscillator_a = NULL;
+    voice->oscillator_b = NULL;
+    voice->oscillator_c = NULL;
+
+    voice->envelope_a = NULL;
+    voice->envelope_b = NULL;
+
+    voice->lfo_a = NULL;
+
+    voice->filter_a = NULL;
+}
+
+void voice_load(struct Voice* voice){
+    voice->output_operator = NULL;
+
+    voice->oscillator_a = oscillator_new();
+    voice->oscillator_b = oscillator_new();
+    voice->oscillator_c = oscillator_new();
+
+    voice->operator_a = operator_new();
+    voice->operator_b = operator_new();
+    voice->operator_c = operator_new();
+
+    voice->envelope_a = oscillator_new();
+    voice->envelope_b = oscillator_new();
+
+    voice->lfo_a = oscillator_new();
+
+    voice->filter_a = filter_new();
+}
+
 struct Voice* voice_new(){
     struct Voice* voice = malloc(sizeof(struct Voice));
-    voice->operator = NULL;
-    voice->trigger = 0;
+    voice_init(voice);
     return voice;
 }
 
 void voices_unload(struct VoiceBank* voice_bank){
     for (int i=0;i<voice_bank->n_voices;i++){
-        operator_unload(voice_bank->voices[i]->operator);
+        operator_unload(voice_bank->voices[i]->output_operator);
     }
     free(voice_bank->voices);
     voice_bank->n_voices = 0;
@@ -40,13 +102,208 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
     if (voice_bank->n_voices != 0) voices_unload(voice_bank);
     voice_bank->voices = malloc(sizeof(struct Voice*)*n_voices);
     for (int i=0;i<n_voices;i++){
-        struct Operator* operator = operator_new();
+        voice_bank->voices[i] = voice_new();
+        voice_load(voice_bank->voices[i]);
+
+        struct Voice* voice = voice_bank->voices[i];
+        oscillator_load(voice->oscillator_a, &sample_wave);
+        voice->oscillator_a->loop_type = FORWARD;
+        voice->oscillator_a->state = STOPPED;
+        voice->operator_a->src_wave = voice->oscillator_a;
+        voice->operator_a->volume = 4096;
+        voice->operator_a->mode = OSCILLATOR;
+        /*oscillator_load(voice->envelope_a, &envelope);
+        voice->operator_a->envelope = voice->envelope_a;
+        voice->operator_a->envelope->loop_start =100<<16;
+        voice->operator_a->envelope->loop_stop = 101<<16;
+        oscillator_set_frequency(voice->envelope_a, 0.25);
+        voice->operator_a->envelope->state = STOPPED;
+        voice->envelope_a->loop_type = BAND;*/
+        voice->output_operator = voice->operator_a;
+    }
+    voice_bank->n_voices = n_voices;
+}
+
+void voices_set_intensity(struct VoiceBank* voice_bank, int16_t intensity){
+    for (uint i=0; i<voice_bank->n_voices; i++){
+        if (voice_bank->voices[i]->output_operator == NULL) continue;
+        voice_bank->voices[i]->output_operator->intensity = intensity;
+    }
+}
+
+void voices_set_mode(struct VoiceBank* voice_bank, enum OperatorMode mode){
+    for (uint i=0; i<voice_bank->n_voices; i++){
+        if (voice_bank->voices[i]->output_operator == NULL) continue;
+        voice_bank->voices[i]->output_operator->mode = mode;
+    }
+}
+
+void voices_set_frequency_ratio(struct VoiceBank* voice_bank, float frequency_ratio){
+    for (uint i=0; i<voice_bank->n_voices; i++){
+        if (voice_bank->voices[i]->output_operator == NULL) continue;
+        operator_set_frequency_ratio(voice_bank->voices[i]->output_operator, frequency_ratio);
+    } 
+}
+
+struct Voice* voices_acquire(struct VoiceBank* voice_bank){
+    for (uint i=0; i<voice_bank->n_voices; i++){
+        struct Voice* voice = voice_bank->voices[i];
+        if (voice->output_operator != NULL && voice->output_operator->envelope->state == STOPPED) return voice_bank->voices[i];
+    }
+    return voice_bank->voices[0];
+}
+
+uint16_t voices_get_next_sample(struct VoiceBank* voice_bank){
+    uint16_t sample = 0;
+    for (int i=0;i<voice_bank->n_voices;i++){
+        if (voice_bank->voices[i]->output_operator != NULL){
+            sample += operator_get_next_sample(voice_bank->voices[i]->output_operator);
+            sample >> 1;
+        }
+    } 
+    //printf("sample %"PRIu16 "\n", sample);
+    return sample;
+}
+
+void voices_get_samples(struct VoiceBank* voice_bank, int16_t* samples, uint n_samples){
+    for (uint i = 0; i < n_samples; i++) {
+        samples[i] = voices_get_next_sample(voice_bank);
+    }
+}
+
+
+void* voice_algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
+    void* node = NULL;
+    switch (node_name){
+        case NO_NODE:
+            break;
+        
+        case OSCILLATOR_A:
+            node = voice->oscillator_a;
+            break;
+        
+        case OSCILLATOR_B:
+            node = voice->oscillator_b;
+            break;
+
+        case OSCILLATOR_C:
+            node = voice->oscillator_c;
+            break;
+
+        case OSCILLATOR_D:
+            node = voice->oscillator_d;
+            break;
+
+        case OSCILLATOR_E:
+            node = voice->oscillator_e;
+            break;
+
+        case OSCILLATOR_F:
+            node = voice->oscillator_f;
+            break;
+
+        case OPERATOR_A:
+            node = voice->operator_a;
+            break;
+
+        case OPERATOR_B:
+            node = voice->operator_b;
+            break;
+
+        case OPERATOR_C:
+            node = voice->operator_c;
+            break;
+
+        case OPERATOR_D:
+            node = voice->operator_d;
+            break;
+
+        case OPERATOR_E:
+            node = voice->operator_e;
+            break;
+
+        case ENVELOPE_A:
+            node = voice->envelope_a;
+            break;
+
+        case ENVELOPE_B:
+            node = voice->envelope_b;
+            break;
+
+        case LFO_A:
+            node = voice->lfo_a;
+            break;
+
+        case SINE_WAVE:
+            node = &sine_wave;
+            break;
+
+        case SQUARE_WAVE:
+            node = &square_wave;
+            break;
+
+        case SAW_WAVE:
+            node = &saw_wave;
+            break;
+
+        case TRIANGLE_WAVE:
+            node = &triangle_wave;
+            break;
+
+        case SAMPLE_WAVE:
+            node = &sample_wave;
+            break;
+    }
+
+    return node;
+}
+
+
+void voice_load_algorithm(struct Voice* voice, struct Algorithm* algorithm){
+    for (int i=0; i<N_ALGORITHM_SETTINGS; i++){
+        struct AlgorithmSetting setting = algorithm->settings[i];
+        void* node = voice_algorithm_node_name(voice, setting.node);
+        enum VoiceParameter parameter = setting.parameter;
+        void* parameter_node = voice_algorithm_node_name(voice, setting.parameter);
+        switch (parameter){
+            case NO_PARAMETER:
+                break;
+
+            case CARRIER_OPERATOR:
+                ((struct Operator*) node)->carrier = (struct Operator*) parameter_node;
+                break;
+
+            case CARRIER_OSCILLATOR:
+                ((struct Operator*) node)->carrier = (struct Operator*) parameter_node;
+                break;
+        }
+    }
+}
+
+
+/*if (setting.node != NO_NODE){
+            if (setting.node <= OPERATOR_E){ //then is an operator
+                
+            }else if (setting.node <= LFO_A){ // then is an oscillator
+
+            }else if (setting.node == FILTER_A){ //u get it
+                
+            }else if (setting.node <= SAMPLE_WAVE){ //hopefully
+
+            }
+        }*/
+
+
+
+
+/*
+struct Operator* operator = operator_new();
 
         struct Oscillator* envelope_osc = oscillator_new();
         oscillator_load(envelope_osc, &envelope);
         oscillator_set_frequency(envelope_osc, 0.25);
-        envelope_osc->loop_start = 199<<16;
-        envelope_osc->loop_stop = 200<<16;
+        envelope_osc->loop_start =10<<16;
+        envelope_osc->loop_stop = 11<<16;
         envelope_osc->loop_type = BAND;
         envelope_osc->state = STOPPED;
 
@@ -61,7 +318,7 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
         sine_osc->state = STOPPED;
 
         struct Oscillator* square_osc = oscillator_new();
-        oscillator_load(square_osc, &noise_wave);
+        oscillator_load(square_osc, &square_wave);
         square_osc->loop_type = FORWARD;
         square_osc->state = STOPPED;
 
@@ -78,72 +335,29 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
         operator_set_frequency(square_op, 10);
 
         struct Operator* sample_op = operator_new();
-        /*sample_op->mode = ADDITIVE;
+        sample_op->mode = PHASE_MODULATION;
         sample_op->carrier = sine_op;
         sample_op->modulator = square_op;
         sample_op->intensity = 32767;
-        sample_op->frequency_ratio = 2;*/
-        operator_load_oscillator(sample_op, sample_osc);
+        sample_op->frequency_ratio = 0.5;
+        //operator_load_oscillator(sample_op, sample_osc);
         sample_op->volume = 32767;
 
         struct Filter* filter = filter_new();
         filter->type = TEST;
-        filter->value = 0;
+        filter->value = 32000;
 
         operator->envelope = envelope_osc;
-        operator->carrier = square_op;
-        operator->modulator = NULL;//square_op;
-        operator->mode = CARRIER;
-        operator->filter = filter;
+        operator->carrier = sample_op;
+        operator->modulator = sine_op;
+        operator->mode = RING_MODULATION;
+        operator->filter = NULL;//filter;
         operator->volume = 2048;
-        operator->frequency_ratio = 4;
+        operator->frequency_ratio = 2;
         operator->intensity = 400;
         operator_set_frequency(operator, 400);
 
         struct Voice* voice = voice_new();
         voice->operator = operator;
         voice_bank->voices[i] = voice;
-    }
-    voice_bank->n_voices = n_voices;
-}
-
-void voices_set_intensity(struct VoiceBank* voice_bank, int16_t intensity){
-    for (uint i=0; i<voice_bank->n_voices; i++){
-        voice_bank->voices[i]->operator->intensity = intensity;
-    }
-}
-
-void voices_set_mode(struct VoiceBank* voice_bank, enum OperatorMode mode){
-    for (uint i=0; i<voice_bank->n_voices; i++){
-        voice_bank->voices[i]->operator->mode = mode;
-    }
-}
-
-void voices_set_frequency_ratio(struct VoiceBank* voice_bank, float frequency_ratio){
-    for (uint i=0; i<voice_bank->n_voices; i++){
-        operator_set_frequency_ratio(voice_bank->voices[i]->operator, frequency_ratio);
-    } 
-}
-
-struct Voice* voices_acquire(struct VoiceBank* voice_bank){
-    for (uint i=0; i<voice_bank->n_voices; i++){
-        if (voice_bank->voices[i]->operator->envelope->state == STOPPED) return voice_bank->voices[i];
-    }
-    return voice_bank->voices[0];
-}
-
-uint16_t voices_get_next_sample(struct VoiceBank* voice_bank){
-    uint16_t sample = 0;
-    for (int i=0;i<voice_bank->n_voices;i++){
-        sample += operator_get_next_sample(voice_bank->voices[i]->operator);
-        sample >> 1;
-    } 
-    //printf("sample %"PRIu16 "\n", sample);
-    return sample;
-}
-
-void voices_get_samples(struct VoiceBank* voice_bank, int16_t* samples, uint n_samples){
-    for (uint i = 0; i < n_samples; i++) {
-        samples[i] = voices_get_next_sample(voice_bank);
-    }
-}
+        */

@@ -4,7 +4,7 @@ struct WaveTable saw_wave;
 struct WaveTable triangle_wave;
 struct WaveTable noise_wave;
 struct WaveTable envelope;
-struct WaveTable sample_table;
+struct WaveTable sample_wave;
 
 void waves_load(){
     wavetable_init(&square_wave);
@@ -23,8 +23,8 @@ void waves_load(){
     wavetable_load_noise(&noise_wave, WAVE_TABLE_LEN);
 
     wavetable_init(&envelope);
-    wavetable_load_adsr(&envelope, 600, 1, 32767, 0);
+    wavetable_load_adsr(&envelope, 99, 1, 32767, 10);
 
-    wavetable_init(&sample_table);
-    wavetable_load_sample(&sample_table, sample_wave, 23713, 60);
+    wavetable_init(&sample_wave);
+    wavetable_load_sample(&sample_wave, sample_table, 14320, 220);
 }

@@ -1,4 +1,5 @@
 //TODO: interpolation
+//FIX voice adding code
 //saw wave, triangle wave, etc...
 
 //FIX SCALE GEN -> sharps + flats
@@ -34,6 +35,7 @@
 #include "operator.c"
 #include "scale.c"
 #include "input.c"
+#include "algorithms.c"
 #include "voices.c"
 #include "lcd_lib.c"
 #include "display.c"
@@ -231,56 +233,56 @@ int main(void) {
             for (int j=0;j<n_buttons;j++){
                 if (input_button_pressed(j)){
                     struct Voice* voice = voices_acquire(&voice_bank);
+                    voice_load_algorithm(voice, &algo1);
                     voice->trigger = j;
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_C, 1);
+                            freq = scale_get_frequency(Note_C, 2);
                             break;
                         case 1:
-                            freq = scale_get_frequency(Note_D, 3);
+                            freq = scale_get_frequency(Note_C, 3);
                             break;
                         case 2:
-                            freq = scale_get_frequency(Note_E, 3);
+                            freq = scale_get_frequency(Note_C, 4);
                             break;
                         case 3:
-                            freq = scale_get_frequency(Note_F, 3);
+                            freq = scale_get_frequency(Note_C, 5);
                             break;
                         case 4:
-                            freq = scale_get_frequency(Note_G, 3);
+                            freq = scale_get_frequency(Note_C, 6);
                             break;
                     }
-                    operator_set_frequency(voice->operator, freq);
-                    operator_start(voice->operator);
+                    operator_set_frequency(voice->output_operator, freq);
+                    operator_start(voice->output_operator);
                 }else if (input_button_released(j)){
                     for (int k=0;k<voice_bank.n_voices;k++){
                         struct Voice* voice = voice_bank.voices[k];
-                        if (voice->trigger==j && voice->operator->envelope->state==PLAYING){
-                            voice->operator->envelope->state = STOPPING;
+                        if (voice->trigger==j && voice->output_operator->envelope->state==PLAYING){
+                            voice->output_operator->envelope->state = STOPPING;
                         }
                     }
                     
                 }
             }
-            if (current_state>>5 & 1){
+            /*if (current_state>>5 & 1){
                 voices_set_intensity(&voice_bank, 100);
-                /*voices_set_mode(&voice_bank, CARRIER);
-                lcd_string(&my_lcd, "Carrier Only");*/
+                voices_set_mode(&voice_bank, CARRIER);
+                lcd_string(&my_lcd, "Carrier Only");
                 //voices_set_frequency_ratio(&voice_bank, 0.01);
             }else if (current_state>>6 & 1){
-                /*lcd_string(&my_lcd, "Phase Modulation");
+                lcd_string(&my_lcd, "Phase Modulation");
                 voices_set_intensity(&voice_bank, 2000);
-                voices_set_mode(&voice_bank, RING_MODULATION);*/
+                voices_set_mode(&voice_bank, RING_MODULATION);
                 voices_set_intensity(&voice_bank, 500);
                 //voices_set_frequency_ratio(&voice_bank, 0.5f);
             }else if (current_state>>7 & 1){
                 voices_set_intensity(&voice_bank, 800);
-                /*
                 lcd_string(&my_lcd, "Additive");
                 voices_set_intensity(&voice_bank, 32767);
-                voices_set_mode(&voice_bank, ADDITIVE);*/
+                voices_set_mode(&voice_bank, ADDITIVE);
                 //voices_set_frequency_ratio(&voice_bank, 4);
-            }
+            }*/
         
 
             /*if (input_button_pressed(0)){

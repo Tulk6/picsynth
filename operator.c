@@ -196,8 +196,8 @@ int16_t operator_get_current_sample(struct Operator* operator){
     
     if (operator->envelope != NULL){
         int16_t envelope_level = abs(oscillator_get_current_sample(operator->envelope));
-        operator->intensity = envelope_level;
-        //sample = (sample*envelope_level) >> 15;
+        //operator->intensity = envelope_level;
+        sample = (sample*envelope_level) >> 15;
     }
 
     sample = (sample*operator->volume) >> 15;
