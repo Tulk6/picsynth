@@ -20,6 +20,10 @@ enum VoiceParameter {
     FREQUENCY,
 
     WAVEFORM,
+    LOOP_TYPE,
+    STATE,
+
+    OUTPUT_OPERATOR,
 };
 
 enum VoiceValue {
@@ -29,8 +33,6 @@ enum VoiceValue {
     OPERATOR_C,
     OPERATOR_D,
     OPERATOR_E,
-
-    OUTPUT_OPERATOR,
     
     OSCILLATOR_A,
     OSCILLATOR_B,
@@ -50,7 +52,9 @@ enum VoiceValue {
     SQUARE_WAVE,
     SAW_WAVE,
     TRIANGLE_WAVE,
-    SAMPLE_WAVE
+    SAMPLE_WAVE,
+
+    VOICE
 };
 
 struct AlgorithmSetting {
@@ -69,6 +73,25 @@ struct Algorithm{
 };
 
 struct Algorithm algo1 = {
+    .settings = {
+        {.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=SINE_WAVE},
+
+        {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SINE_WAVE},
+
+        {.node=OPERATOR_A, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_A},
+        {.node=OPERATOR_A, .parameter=MODULATOR_OSCILLATOR, .value_node=OSCILLATOR_B},
+
+        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=PHASE_MODULATION},
+        {.node=OPERATOR_A, .parameter=FREQUENCY_RATIO, .value_float=0.5},
+        {.node=OPERATOR_A, .parameter=FUNCTION_INTENSITY, .value_int=800},
+
+
+        {.node=VOICE, .parameter=OUTPUT_OPERATOR, .value_node=OPERATOR_A},
+        {.node=OPERATOR_A, .parameter=VOLUME, .value_int = 2048}
+    }
+};
+
+/*struct Algorithm algo1 = {
     .settings = {
         {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SINE_WAVE},
         {.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=SINE_WAVE},
@@ -100,8 +123,9 @@ struct Algorithm algo1 = {
         {.node=OPERATOR_E, .parameter=MODULATOR_OPERATOR, .value_node=OPERATOR_D},
         {.node=OPERATOR_E, .parameter=OPERATOR_FUNCTION, .value_mode=ADDITIVE},
         {.node=OPERATOR_E, .parameter=VOLUME, .value_int=4096},
+        {.node=OUTPUT_OPERATOR, .parameter=OUTPUT_OPERATOR, .value_node=OPERATOR_E},
     }
-};
+};*/
 
 
 
