@@ -20,6 +20,7 @@ struct Oscillator{
     enum LoopType loop_type;
     enum PlayState state;
     struct WaveTable* wavetable;
+    float frequency;
 };
 
 void oscillator_init(struct Oscillator* oscillator){
@@ -36,6 +37,8 @@ void oscillator_init(struct Oscillator* oscillator){
     oscillator->state = PLAYING;
     
     oscillator->wavetable = NULL;
+
+    oscillator->frequency = 0;
 }
 
 void oscillator_load(struct Oscillator* oscillator, struct WaveTable* wavetable){
@@ -103,11 +106,13 @@ void oscillator_get_samples(struct Oscillator* oscillator, int16_t* samples, uin
 }
 
 void oscillator_set_frequency(struct Oscillator* oscillator, float frequency){
+    oscillator->frequency = frequency;
     oscillator->step = ((uint64_t) (frequency*65536)*oscillator->wavetable->table_len)/((uint32_t) (SAMPLE_RATE*oscillator->wavetable->frequency));
     //printf("freq: %f\n", frequency);
     //printf("step: %f\n", (float)oscillator->step/65536);
 }
 
 float oscillator_get_frequency(struct Oscillator* oscillator){
-    return ( (uint32_t) oscillator->step*SAMPLE_RATE*oscillator->wavetable->frequency)/((uint64_t) (65536*oscillator->wavetable->table_len));
+    return oscillator->frequency;
+    //return ( (uint32_t) oscillator->step*SAMPLE_RATE*oscillator->wavetable->frequency)/((uint64_t) (65536*oscillator->wavetable->table_len));
 }
