@@ -219,10 +219,13 @@ int main(void) {
     oscillator2.vol = vol;
     oscillator2.table = sine_wave_table;*/
 
+    voices_load_algorithm(&voice_bank, &algo1);
+
     
     uint i = 0;
     while (true) {
         input_read();
+        
         /*adc = (input_read_adc()>>9);
         if (adc != prev_adc){
             printf("adc: %i\n", adc);
@@ -232,13 +235,13 @@ int main(void) {
         if (input_just_pressed()){
             for (int j=0;j<n_buttons;j++){
                 if (input_button_pressed(j)){
+                    printf("just pressed %i\n", j);
                     struct Voice* voice = voices_acquire(&voice_bank);
-                    voice_load_algorithm(voice, &algo1);
                     voice->trigger = j;
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_C, 2);
+                            freq = scale_get_frequency(Note_C, 5);
                             break;
                         case 1:
                             freq = scale_get_frequency(Note_C, 3);
@@ -253,8 +256,11 @@ int main(void) {
                             freq = scale_get_frequency(Note_C, 6);
                             break;
                     }
+                    printf("a");
                     operator_set_frequency(voice->output_operator, freq);
+                    printf("b");
                     operator_start(voice->output_operator);
+                    printf("c");
                 }else if (input_button_released(j)){
                     for (int k=0;k<voice_bank.n_voices;k++){
                         struct Voice* voice = voice_bank.voices[k];

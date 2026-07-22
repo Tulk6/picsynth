@@ -51,10 +51,15 @@ void voice_init(struct Voice* voice){
     voice->operator_a = NULL;
     voice->operator_b = NULL;
     voice->operator_c = NULL;
+    voice->operator_d = NULL;
+    voice->operator_e = NULL;
 
     voice->oscillator_a = NULL;
     voice->oscillator_b = NULL;
     voice->oscillator_c = NULL;
+    voice->oscillator_d = NULL;
+    voice->oscillator_e = NULL;
+    voice->oscillator_f = NULL;
 
     voice->envelope_a = NULL;
     voice->envelope_b = NULL;
@@ -67,13 +72,18 @@ void voice_init(struct Voice* voice){
 void voice_load(struct Voice* voice){
     voice->output_operator = NULL;
 
-    voice->oscillator_a = oscillator_new();
-    voice->oscillator_b = oscillator_new();
-    voice->oscillator_c = oscillator_new();
-
     voice->operator_a = operator_new();
     voice->operator_b = operator_new();
     voice->operator_c = operator_new();
+    voice->operator_d = operator_new();
+    voice->operator_e = operator_new();
+
+    voice->oscillator_a = oscillator_new();
+    voice->oscillator_b = oscillator_new();
+    voice->oscillator_c = oscillator_new();
+    voice->oscillator_d = oscillator_new();
+    voice->oscillator_e = oscillator_new();
+    voice->oscillator_f = oscillator_new();
 
     voice->envelope_a = oscillator_new();
     voice->envelope_b = oscillator_new();
@@ -109,16 +119,18 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
         oscillator_load(voice->oscillator_a, &sample_wave);
         voice->oscillator_a->loop_type = FORWARD;
         voice->oscillator_a->state = STOPPED;
-        voice->operator_a->src_wave = voice->oscillator_a;
+        voice->oscillator_b->loop_type = FORWARD;
+        voice->oscillator_b->state = STOPPED;
+        voice->operator_a->carrier_oscillator = voice->oscillator_a;
         voice->operator_a->volume = 4096;
-        voice->operator_a->mode = OSCILLATOR;
-        /*oscillator_load(voice->envelope_a, &envelope);
+        voice->operator_a->mode = CARRIER;
+        oscillator_load(voice->envelope_a, &envelope);
         voice->operator_a->envelope = voice->envelope_a;
         voice->operator_a->envelope->loop_start =100<<16;
         voice->operator_a->envelope->loop_stop = 101<<16;
-        oscillator_set_frequency(voice->envelope_a, 0.25);
+        oscillator_set_frequency(voice->envelope_a, 8);
         voice->operator_a->envelope->state = STOPPED;
-        voice->envelope_a->loop_type = BAND;*/
+        voice->envelope_a->loop_type = BAND;
         voice->output_operator = voice->operator_a;
     }
     voice_bank->n_voices = n_voices;
@@ -173,6 +185,7 @@ void voices_get_samples(struct VoiceBank* voice_bank, int16_t* samples, uint n_s
 
 
 void* voice_algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
+    printf("hmm, what is a %i...\n", node_name);
     void* node = NULL;
     switch (node_name){
         case NO_NODE:
@@ -253,6 +266,10 @@ void* voice_algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
         case SAMPLE_WAVE:
             node = &sample_wave;
             break;
+
+        case VOICE:
+            node = voice;
+            break;
     }
 
     return node;
@@ -261,22 +278,71 @@ void* voice_algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
 
 void voice_load_algorithm(struct Voice* voice, struct Algorithm* algorithm){
     for (int i=0; i<N_ALGORITHM_SETTINGS; i++){
+        printf("LOOKING AT SETTING %i\n", i);
         struct AlgorithmSetting setting = algorithm->settings[i];
+        if (setting.node == NO_NODE || setting.parameter == NO_PARAMETER) continue;
+        printf("finding node...\n");
         void* node = voice_algorithm_node_name(voice, setting.node);
+        if (node == NULL) continue;
+        printf("finding parameter\n");
         enum VoiceParameter parameter = setting.parameter;
-        void* parameter_node = voice_algorithm_node_name(voice, setting.parameter);
+        void* value_node = voice_algorithm_node_name(voice, setting.value_node);
         switch (parameter){
-            case NO_PARAMETER:
-                break;
+            case OUTPUT_OPERATOR:
+                voice->output_operator = value_node;
 
             case CARRIER_OPERATOR:
-                ((struct Operator*) node)->carrier = (struct Operator*) parameter_node;
+                ((struct Operator*) node)->carrier_operator = (struct Operator*) value_node;
                 break;
 
             case CARRIER_OSCILLATOR:
-                ((struct Operator*) node)->carrier = (struct Operator*) parameter_node;
+                ((struct Operator*) node)->carrier_oscillator = (struct Oscillator*) value_node;
+                break;
+
+            case MODULATOR_OPERATOR:
+                ((struct Operator*) node)->modulator_operator = (struct Operator*) value_node;
+                break;
+
+            case MODULATOR_OSCILLATOR:
+                ((struct Operator*) node)->modulator_oscillator = (struct Oscillator*) value_node;
+                break;
+
+            case ENVELOPE_OSCILLATOR:
+                ((struct Operator*) node)->envelope = (struct Oscillator*) value_node;
+                break;
+
+            case OPERATOR_FUNCTION:
+                ((struct Operator*) node)->mode = setting.value_mode;
+                break;
+
+            case FUNCTION_INTENSITY:
+                ((struct Operator*) node)->intensity = setting.value_int;
+                break;
+
+            case VOLUME:
+                ((struct Operator*) node)->volume = setting.value_int;
+                break;
+
+            case FREQUENCY_RATIO:
+                ((struct Operator*) node)->frequency_ratio = setting.value_float;
+                break;
+
+            case FREQUENCY:
+                ((struct Operator*) node)->frequency = setting.value_float;
+                break;
+
+            case WAVEFORM:
+                oscillator_load(((struct Oscillator*) node), value_node);
                 break;
         }
+    }
+}
+
+void voices_load_algorithm(struct VoiceBank* voice_bank, struct Algorithm* algorithm){
+    for (int i=0;i<voice_bank->n_voices;i++){
+        if (voice_bank->voices[i] != NULL){
+            voice_load_algorithm(voice_bank->voices[i], algorithm);
+        } 
     }
 }
 
