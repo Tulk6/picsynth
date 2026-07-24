@@ -34,7 +34,7 @@ void oscillator_init(struct Oscillator* oscillator){
     oscillator->loop_stop = 0;
 
     oscillator->loop_type = NO_LOOP;
-    oscillator->state = PLAYING;
+    oscillator->state = STOPPED;
     
     oscillator->wavetable = NULL;
 
@@ -44,6 +44,10 @@ void oscillator_init(struct Oscillator* oscillator){
 void oscillator_load(struct Oscillator* oscillator, struct WaveTable* wavetable){
     oscillator->pos_stop = wavetable->table_len << 16;
     oscillator->wavetable = wavetable;
+}
+
+void oscillator_reload(struct Oscillator* oscillator){
+    oscillator->pos_stop = oscillator->wavetable->table_len << 16;
 }
 
 struct Oscillator* oscillator_new(){
