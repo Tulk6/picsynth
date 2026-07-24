@@ -86,7 +86,9 @@ void voice_load(struct Voice* voice){
     voice->oscillator_f = oscillator_new();
 
     voice->envelope_a = oscillator_new();
+    oscillator_load(voice->envelope_a, wavetable_new());
     voice->envelope_b = oscillator_new();
+    oscillator_load(voice->envelope_b, wavetable_new());
 
     voice->lfo_a = oscillator_new();
 
@@ -115,7 +117,7 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
         voice_bank->voices[i] = voice_new();
         voice_load(voice_bank->voices[i]);
 
-        struct Voice* voice = voice_bank->voices[i];
+        /*struct Voice* voice = voice_bank->voices[i];
         oscillator_load(voice->oscillator_a, &sample_wave);
         voice->oscillator_a->loop_type = FORWARD;
         voice->oscillator_a->state = STOPPED;
@@ -131,7 +133,7 @@ void voices_load(struct VoiceBank* voice_bank, uint n_voices){
         oscillator_set_frequency(voice->envelope_a, 8);
         voice->operator_a->envelope->state = STOPPED;
         voice->envelope_a->loop_type = BAND;
-        voice->output_operator = voice->operator_a;
+        voice->output_operator = voice->operator_a;*/
     }
     voice_bank->n_voices = n_voices;
 }
@@ -247,6 +249,10 @@ void* voice_algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
             node = voice->lfo_a;
             break;
 
+        case FILTER_A:
+            node = voice->filter_a;
+            break;
+
         case SINE_WAVE:
             node = &sine_wave;
             break;
@@ -316,23 +322,58 @@ void voice_load_algorithm(struct Voice* voice, struct Algorithm* algorithm){
                 break;
 
             case FUNCTION_INTENSITY:
-                ((struct Operator*) node)->intensity = setting.value_int;
+                ((struct Operator*) node)->intensity = setting.value_int16;
                 break;
 
             case VOLUME:
-                ((struct Operator*) node)->volume = setting.value_int;
+                ((struct Operator*) node)->volume = setting.value_int16;
                 break;
 
             case FREQUENCY_RATIO:
                 ((struct Operator*) node)->frequency_ratio = setting.value_float;
                 break;
 
-            case FREQUENCY:
-                ((struct Operator*) node)->frequency = setting.value_float;
+            case OPERATOR_FREQUENCY:
+                operator_set_frequency((struct Operator*) node, setting.value_float);
+                break;
+
+            case FILTER:
+                ((struct Operator*) node)->filter = value_node;
+                break;
+
+            case OSCILLATOR_FREQUENCY:
+                oscillator_set_frequency((struct Oscillator*) node, setting.value_float);
                 break;
 
             case WAVEFORM:
                 oscillator_load(((struct Oscillator*) node), value_node);
+                break;
+
+            case LOOP_TYPE:
+                ((struct Oscillator*) node)->loop_type = setting.value_loop;
+                break;
+
+            case LOOP_START:
+                ((struct Oscillator*) node)->loop_start = setting.value_int16;
+                break;
+
+            case LOOP_STOP:
+                ((struct Oscillator*) node)->loop_stop = setting.value_int16;
+                break;
+
+            case ADSR:
+                wavetable_load_adsr_int(((struct Oscillator*) node)->wavetable, setting.value_uint32);
+                oscillator_reload((struct Oscillator*) node);
+                oscillator_set_frequency((struct Oscillator*) node, 1);
+                break;
+
+
+            case FILTER_TYPE:
+                ((struct Filter*) node)->type = setting.value_filter;
+                break;
+            
+            case FILTER_INTENSITY:
+                ((struct Filter*) node)->intensity_oscillator = value_node;
                 break;
         }
     }
