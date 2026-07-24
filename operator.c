@@ -171,6 +171,12 @@ void operator_stop(struct Operator* operator){
     if (operator->envelope != NULL & operator->envelope->state == PLAYING){
         operator->envelope->state = STOPPING;
     }
+    if (operator->carrier_operator != NULL){
+        operator_stop(operator->carrier_operator);
+    }
+    if (operator->carrier_oscillator != NULL){
+        operator->carrier_oscillator->state = STOPPED;
+    }
 }
 
 int16_t operator_get_current_sample(struct Operator* operator){
@@ -244,11 +250,14 @@ int16_t operator_get_current_sample(struct Operator* operator){
     }
 
     if (operator->filter != NULL){
-        sample = filter_apply(operator->filter, sample, operator->intensity);
+        sample = filter_apply(operator->filter, sample);
     }
     
     if (operator->envelope != NULL){
         int16_t envelope_level = abs(oscillator_get_current_sample(operator->envelope));
+        /*printf("envelop_level: %"PRIi16"\n", envelope_level);
+        printf("envelope_pos: %"PRIu32"\n", operator->envelope->pos);*/
+        
         //operator->intensity = envelope_level;
         sample = (sample*envelope_level) >> 15;
     }

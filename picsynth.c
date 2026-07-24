@@ -1,12 +1,13 @@
 //TODO: interpolation
 //FIX voice adding code
 //saw wave, triangle wave, etc...
+//TODO: make sample advance voice based, as well as start stop
 
 //FIX SCALE GEN -> sharps + flats
 
 #define WAVE_TABLE_LEN 2048
 #define SAMPLES_PER_BUFFER 256
-#define SAMPLE_RATE 22000
+#define SAMPLE_RATE 44000
 
 //#define PICO_AUDIO_I2S_DATA_PIN
 //#define PICO_AUDIO_I2S_CLOCK_PIN_BASE
@@ -106,6 +107,10 @@ struct audio_buffer_pool *init_audio(void) {
 int main(void) {
     stdio_init_all();
     input_init();
+
+    /*while (true){
+        if (getchar_timeout_us(0) >= 0) break;
+    }*/
     
     struct audio_buffer_pool *ap = init_audio();
 
@@ -241,19 +246,19 @@ int main(void) {
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_C, 5);
+                            freq = scale_get_frequency(Note_A, 2);
                             break;
                         case 1:
-                            freq = scale_get_frequency(Note_C, 3);
+                            freq = scale_get_frequency(Note_C, 2);
                             break;
                         case 2:
-                            freq = scale_get_frequency(Note_C, 4);
+                            freq = scale_get_frequency(Note_C, 3);
                             break;
                         case 3:
-                            freq = scale_get_frequency(Note_C, 5);
+                            freq = scale_get_frequency(Note_E, 2);
                             break;
                         case 4:
-                            freq = scale_get_frequency(Note_C, 6);
+                            freq = scale_get_frequency(Note_E, 3);
                             break;
                     }
                     printf("a");
@@ -264,8 +269,8 @@ int main(void) {
                 }else if (input_button_released(j)){
                     for (int k=0;k<voice_bank.n_voices;k++){
                         struct Voice* voice = voice_bank.voices[k];
-                        if (voice->trigger==j && voice->output_operator->envelope->state==PLAYING){
-                            voice->output_operator->envelope->state = STOPPING;
+                        if (voice->trigger==j){
+                            operator_stop(voice->output_operator);
                         }
                     }
                     

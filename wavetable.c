@@ -33,6 +33,12 @@ void wavetable_init(struct WaveTable* wavetable){
     wavetable->frequency = 0;
 }
 
+struct WaveTable* wavetable_new(){
+    struct WaveTable* wavetable = malloc(sizeof(struct WaveTable));
+    wavetable_init(wavetable);
+    return wavetable;
+}
+
 void wavetable_load(struct WaveTable* wavetable, uint32_t table_len){
     if (wavetable->table != NULL) free(wavetable->table);
     wavetable->table_len = table_len;
@@ -75,7 +81,7 @@ void wavetable_load_square(struct WaveTable* wavetable, uint32_t table_len){
     }
 }
 
-void wavetable_load_saw(struct WaveTable* wavetable, uint32_t table_len){
+void wavetable_load_triangle(struct WaveTable* wavetable, uint32_t table_len){
     //erm probs could be improvesd
     wavetable_load(wavetable, table_len);
     wavetable->frequency = 1;
@@ -101,7 +107,7 @@ void wavetable_load_noise(struct WaveTable* wavetable, uint32_t table_len){
     }
 }
 
-void wavetable_load_triangle(struct WaveTable* wavetable, uint32_t table_len){
+void wavetable_load_saw(struct WaveTable* wavetable, uint32_t table_len){
     //erm probs could be improvesd
     wavetable_load(wavetable, table_len);
     wavetable->frequency = 1;
@@ -130,7 +136,7 @@ void wavetable_load_ad(struct WaveTable* wavetable, uint32_t attack, uint32_t de
     }
 }
 
-void wavetable_load_adsr(struct WaveTable* wavetable, uint32_t attack, uint32_t decay, uint16_t sustain, uint32_t release){
+void wavetable_load_adsr(struct WaveTable* wavetable, uint32_t attack, uint32_t decay, int16_t sustain, uint32_t release){
     int16_t max = INT16_MAX;
     uint32_t table_len = attack+decay+release+1;
     wavetable->frequency = 1;
@@ -151,7 +157,15 @@ void wavetable_load_adsr(struct WaveTable* wavetable, uint32_t attack, uint32_t 
             val = 0;
         }
         int16_t level = val;
-        //printf("val %i\n", val);
         wavetable->table[i] = level;
     }
+}
+
+void wavetable_load_adsr_int(struct WaveTable* wavetable, uint32_t envelope){
+    uint32_t attack = envelope >> 24;
+    uint32_t decay = (envelope >> 16) & 255;
+    int16_t sustain = ((envelope >> 8) & 255)<<7; //sustain should be out of 32767 -> max value, full volume
+    uint32_t release = (envelope) & 255;
+    printf("attack: %u, decay: %u, sustain: %i, release: %u\n", attack, decay, sustain, release);
+    wavetable_load_adsr(wavetable, attack, decay, sustain, release);
 }
