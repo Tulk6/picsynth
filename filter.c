@@ -9,13 +9,13 @@ enum FilterType {
 struct Filter {
     enum FilterType type;
     int16_t prev_sample;
-    int16_t value;
+    struct Oscillator* intensity_oscillator;
 };
 
 void filter_init(struct Filter* filter){
     filter->prev_sample = 0;
     filter->type = TEST;
-    filter->value = 0;
+    filter->intensity_oscillator = NULL;
 }
 
 struct Filter* filter_new(){
@@ -24,11 +24,13 @@ struct Filter* filter_new(){
     return filter;
 }
 
-int16_t filter_apply(struct Filter* filter, int16_t sample, int16_t cutoff){
+int16_t filter_apply(struct Filter* filter, int16_t sample){
     int64_t new_sample = 0;
+    int16_t intensity = 0;
+    if (filter->intensity_oscillator != NULL) intensity = oscillator_get_current_sample(filter->intensity_oscillator);
     switch (filter->type){
         case TEST:
-            new_sample = ((filter->value*sample)>>15) + (((32767-filter->value)*filter->prev_sample)>>15);
+            new_sample = ((intensity*sample)>>15) + (((32767-intensity)*filter->prev_sample)>>15);
             break;
     }
     filter->prev_sample = new_sample;
