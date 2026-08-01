@@ -9,6 +9,12 @@
 //CLEAN!!!
 
 
+///okee half way through need to figure out oscillator adding
+// voice stopping
+// adding all oscillators
+// etc
+
+
 //TODO: interpolation
 //FIX voice adding code
 //saw wave, triangle wave, etc...
@@ -47,11 +53,11 @@
 #include "operator.c"
 #include "scale.c"
 #include "input.c"
-#include "algorithms.c"
 #include "voices.c"
 #include "lcd_lib.c"
 #include "display.c"
 #include "interface.c"
+#include "algorithms.c"
 
 
 bi_decl(bi_3pins_with_names(
@@ -133,7 +139,7 @@ int main(void) {
 
     struct VoiceBank voice_bank;
     voices_init(&voice_bank);
-    voices_load(&voice_bank, 5);
+    voices_load(&voice_bank, 2);
 
     /*struct WaveTable sine_wave;
     wavetable_init(&sine_wave);
@@ -237,7 +243,8 @@ int main(void) {
     oscillator2.vol = vol;
     oscillator2.table = sine_wave_table;*/
 
-    voices_load_algorithm(&voice_bank, &algo1);
+    algorithm_apply(&algo1, &voice_bank);
+    printf("algo applied!\n");
 
     
     uint i = 0;
@@ -276,15 +283,15 @@ int main(void) {
                             break;
                     }
                     printf("a");
-                    operator_set_frequency(voice->output_operator, freq);
+                    voice_set_frequency(voice, freq);
                     printf("b");
-                    operator_start(voice->output_operator);
+                    voice_start(voice);
                     printf("c");
                 }else if (input_button_released(j)){
                     for (int k=0;k<voice_bank.n_voices;k++){
                         struct Voice* voice = voice_bank.voices[k];
                         if (voice->trigger==j){
-                            operator_stop(voice->output_operator);
+                            voice_stop(voice);
                         }
                     }
                     

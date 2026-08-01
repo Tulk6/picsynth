@@ -62,6 +62,8 @@ void oscillator_unload(struct Oscillator* oscillator){
 }
 
 void oscillator_set_pos(struct Oscillator* oscillator, uint32_t new_pos){
+    if (oscillator->pos == new_pos) return;
+    //printf("new pos %"PRIi32"\t", new_pos>>16);
     if (new_pos >= oscillator->pos_stop){
         switch (oscillator->loop_type){
             case BAND:
@@ -94,6 +96,7 @@ int16_t oscillator_get_current_sample(struct Oscillator* oscillator){
     if (oscillator->state == STOPPED) return 0;
     //int16_t sample = (wavetable_get_sample(oscillator->wavetable, oscillator->pos>>16));
     int16_t sample = (wavetable_get_sample_interpolated(oscillator->wavetable, oscillator->pos));
+    //printf("sample %"PRIi16"\n", sample);
     return sample;
 }
 
@@ -119,4 +122,13 @@ void oscillator_set_frequency(struct Oscillator* oscillator, float frequency){
 float oscillator_get_frequency(struct Oscillator* oscillator){
     return oscillator->frequency;
     //return ( (uint32_t) oscillator->step*SAMPLE_RATE*oscillator->wavetable->frequency)/((uint64_t) (65536*oscillator->wavetable->table_len));
+}
+
+void oscillator_start(struct Oscillator* oscillator){
+    oscillator->pos = 0;
+    oscillator->state = PLAYING;
+}
+
+void oscillator_stop(struct Oscillator* oscillator){
+    oscillator->state = STOPPING;
 }
