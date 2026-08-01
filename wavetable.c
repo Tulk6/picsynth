@@ -118,6 +118,14 @@ void wavetable_load_saw(struct WaveTable* wavetable, uint32_t table_len){
     }
 }
 
+void wavetable_load_value(struct WaveTable* wavetable, uint32_t table_len, int16_t value){
+    wavetable_load(wavetable, table_len);
+    wavetable->frequency = 1;
+    for (int i = 0; i < table_len; i++) {
+        wavetable->table[i] = value;
+    }
+}
+
 void wavetable_load_ad(struct WaveTable* wavetable, uint32_t attack, uint32_t decay){
     uint32_t table_len = attack+decay;
     wavetable->frequency = 1;

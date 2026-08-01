@@ -1,4 +1,4 @@
-#define N_ALGORITHM_SETTINGS 28
+#define N_ALGORITHM_SETTINGS 60
 
 //const uint8_t N_ALGORITHM_SETTINGS = 10;
 
@@ -70,6 +70,9 @@ enum VoiceValue {
     TRIANGLE_WAVE,
     SAMPLE_WAVE,
     ENVELOPE_WAVE,
+    HIGH_WAVE,
+    LOW_WAVE,
+    NOISE_WAVE,
 
     VOICE
 };
@@ -94,7 +97,72 @@ struct Algorithm{
 
 struct Algorithm algo1 = {
     .settings = {
+        {.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=0b01111111000011111111111100001111},
+        {.node=ENVELOPE_A, .parameter=OSCILLATOR_FREQUENCY, .value_float=0.1},
+
+        {.node=ENVELOPE_A, .parameter=LOOP_TYPE, .value_loop=FORWARD},
+        {.node=FILTER_A, .parameter=FILTER_TYPE, .value_filter=TEST},
+        {.node=FILTER_A, .parameter=FILTER_INTENSITY, .value_node=ENVELOPE_A},
+
+        {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=HIGH_WAVE},
+        {.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=LOW_WAVE},
+        {.node=OSCILLATOR_C, .parameter=WAVEFORM, .value_node=SINE_WAVE},
+
+        {.node=OPERATOR_A, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_A},
+        {.node=OPERATOR_A, .parameter=MODULATOR_OSCILLATOR, .value_node=OSCILLATOR_B},
+        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=PULSE_MODULATION},
+        {.node=OPERATOR_A, .parameter=FUNCTION_INTENSITY, .value_int16=1536},
+        {.node=OPERATOR_A, .parameter=VOLUME, .value_int16=1024},
+        {.node=OPERATOR_A, .parameter=FREQUENCY_RATIO, .value_float=1},
+        {.node=OPERATOR_A, .parameter=FILTER, .value_node=FILTER_A},
+        //{.node=OPERATOR_A, .parameter=ENVELOPE_OSCILLATOR, .value_node=ENVELOPE_A},
+
+        {.node=VOICE, .parameter=OUTPUT_OPERATOR, .value_node=OPERATOR_A}
+    }
+};
+
+        /*{.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=0b01111111000011111111111100001111},
+        {.node=ENVELOPE_A, .parameter=OSCILLATOR_FREQUENCY, .value_float=1},
+        {.node=ENVELOPE_A, .parameter=LOOP_TYPE, .value_int16=NO_LOOP},
+        {.node=ENVELOPE_A, .parameter=LOOP_START, .value_int16=143},
+        {.node=ENVELOPE_A, .parameter=LOOP_STOP, .value_int16=144},
+
+        {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SQUARE_WAVE},
+        {.node=OSCILLATOR_C, .parameter=WAVEFORM, .value_node=SINE_WAVE},
+        {.node=OSCILLATOR_C, .parameter=OSCILLATOR_FREQUENCY, .value_float=2},
+        
+
+        {.node=OPERATOR_A, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_A},
+        {.node=OPERATOR_A, .parameter=MODULATOR_OSCILLATOR, .value_node=OSCILLATOR_C},
+        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_node=PHASE_MODULATION},
+        {.node=OPERATOR_A, .parameter=VOLUME, .value_int16=32767},
+        {.node=OPERATOR_A, .parameter=FUNCTION_INTENSITY, .value_int16=2},
+        {.node=OPERATOR_A, .parameter=FREQUENCY_RATIO, .value_float=0},
+
+
         {.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=SAW_WAVE},
+        {.node=OSCILLATOR_D, .parameter=WAVEFORM, .value_node=SINE_WAVE},
+        {.node=OSCILLATOR_D, .parameter=OSCILLATOR_FREQUENCY, .value_float=2.5},
+
+        {.node=OPERATOR_B, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_B},
+        {.node=OPERATOR_B, .parameter=MODULATOR_OSCILLATOR, .value_node=OSCILLATOR_D},
+        {.node=OPERATOR_B, .parameter=OPERATOR_FUNCTION, .value_node=PHASE_MODULATION},
+        {.node=OPERATOR_B, .parameter=VOLUME, .value_int16=32767},
+        {.node=OPERATOR_B, .parameter=FUNCTION_INTENSITY, .value_int16=2},
+        {.node=OPERATOR_B, .parameter=FREQUENCY_RATIO, .value_float=0},
+
+        {.node=OPERATOR_C, .parameter=CARRIER_OPERATOR, .value_node=OPERATOR_A},
+        {.node=OPERATOR_C, .parameter=MODULATOR_OPERATOR, .value_node=OPERATOR_B},
+        {.node=OPERATOR_C, .parameter=VOLUME, .value_int16=1024},
+        {.node=OPERATOR_C, .parameter=OPERATOR_FUNCTION, .value_mode=ADDITIVE},
+        {.node=OPERATOR_C, .parameter=FUNCTION_INTENSITY, .value_int16=32767},
+        {.node=OPERATOR_C, .parameter=FREQUENCY_RATIO, .value_float=1},
+        {.node=OPERATOR_C, .parameter=ENVELOPE_OSCILLATOR, .value_node=ENVELOPE_A},
+
+
+        {.node=VOICE, .parameter=OUTPUT_OPERATOR, .value_node=OPERATOR_C},*/
+
+        /*{.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=SAW_WAVE},
         {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SAW_WAVE},
         {.node=OSCILLATOR_A, .parameter=LOOP_TYPE, .value_loop=FORWARD},
         {.node=OSCILLATOR_B, .parameter=LOOP_TYPE, .value_loop=FORWARD},
@@ -117,7 +185,7 @@ struct Algorithm algo1 = {
         {.node=OPERATOR_A, .parameter=FREQUENCY_RATIO, .value_float=1.01},
         {.node=OPERATOR_A, .parameter=FILTER, .value_node=FILTER_A}, 
         {.node=VOICE, .parameter=OUTPUT_OPERATOR, .value_node=OPERATOR_A},
-        {.node=OPERATOR_A, .parameter=VOLUME, .value_int16 = 8000}
+        {.node=OPERATOR_A, .parameter=VOLUME, .value_int16 = 8000}*/
 
         /*{.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=SINE_WAVE},
 
@@ -133,8 +201,6 @@ struct Algorithm algo1 = {
 
         {.node=VOICE, .parameter=OUTPUT_OPERATOR, .value_node=OPERATOR_A},
         {.node=OPERATOR_A, .parameter=VOLUME, .value_int = 2048}*/
-    }
-};
 
 /*struct Algorithm algo1 = {
     .settings = {

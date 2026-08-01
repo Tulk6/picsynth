@@ -33,7 +33,7 @@ void oscillator_init(struct Oscillator* oscillator){
     oscillator->loop_start = 0;
     oscillator->loop_stop = 0;
 
-    oscillator->loop_type = NO_LOOP;
+    oscillator->loop_type = FORWARD;
     oscillator->state = STOPPED;
     
     oscillator->wavetable = NULL;

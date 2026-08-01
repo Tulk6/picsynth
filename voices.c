@@ -87,8 +87,10 @@ void voice_load(struct Voice* voice){
 
     voice->envelope_a = oscillator_new();
     oscillator_load(voice->envelope_a, wavetable_new());
+    //voice->envelope_a->loop_type = BAND;
     voice->envelope_b = oscillator_new();
     oscillator_load(voice->envelope_b, wavetable_new());
+    //voice->envelope_b->loop_type = BAND;
 
     voice->lfo_a = oscillator_new();
 
@@ -271,6 +273,18 @@ void* voice_algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
 
         case SAMPLE_WAVE:
             node = &sample_wave;
+            break;
+
+        case HIGH_WAVE:
+            node = &high_wave;
+            break;
+
+        case LOW_WAVE:
+            node = &low_wave;
+            break;
+
+        case NOISE_WAVE:
+            node = &noise_wave;
             break;
 
         case VOICE:

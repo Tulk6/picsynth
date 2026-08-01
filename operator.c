@@ -2,6 +2,7 @@ enum OperatorMode {
     MODE_NONE,
     ADDITIVE,
     PHASE_MODULATION,
+    PULSE_MODULATION,
     RING_MODULATION,
     CARRIER
 };
@@ -72,6 +73,7 @@ void operator_unload(struct Operator* operator){
 void operator_set_frequency(struct Operator* operator, float frequency){
     operator->frequency = frequency;
     float modulator_frequency = frequency*operator->frequency_ratio;
+    printf("ratio: %f\n", operator->frequency_ratio);
     printf("car freq: %f\n", frequency);
     printf("mod freq: %f\n", modulator_frequency);
     switch (operator->mode){
@@ -83,6 +85,7 @@ void operator_set_frequency(struct Operator* operator, float frequency){
             }
             break;
         
+        case PULSE_MODULATION:
         case ADDITIVE:
         case RING_MODULATION:
         case PHASE_MODULATION:
@@ -123,6 +126,14 @@ void operator_set_frequency_ratio(struct Operator* operator, float frequency_rat
             }
             break;
     }*/
+}
+
+uint32_t operator_get_pos(struct Operator* operator){
+    if (operator->carrier_oscillator != NULL){
+        return operator->carrier_oscillator->pos;
+    }else if (operator->carrier_operator != NULL){
+        return operator_get_pos(operator->carrier_operator);
+    }
 }
 
 void operator_set_pos(struct Operator* operator, uint32_t new_pos){
@@ -168,7 +179,7 @@ void operator_start(struct Operator* operator){
 }
 
 void operator_stop(struct Operator* operator){
-    if (operator->envelope != NULL & operator->envelope->state == PLAYING){
+    if (operator->envelope != NULL && operator->envelope->state == PLAYING){
         operator->envelope->state = STOPPING;
     }
     if (operator->carrier_operator != NULL){
@@ -176,6 +187,13 @@ void operator_stop(struct Operator* operator){
     }
     if (operator->carrier_oscillator != NULL){
         operator->carrier_oscillator->state = STOPPED;
+    }
+    if (operator->modulator_oscillator != NULL){
+        operator->modulator_oscillator->state = STOPPED;
+    }
+
+    if (operator->modulator_operator != NULL){
+        operator_stop(operator->modulator_operator);
     }
 }
 
@@ -238,6 +256,22 @@ int16_t operator_get_current_sample(struct Operator* operator){
 
 
             sample = (carrier_level*modulator_level)>>15;
+            break;
+
+        case PULSE_MODULATION:
+            if (operator->carrier_operator != NULL && operator->modulator_operator != NULL){
+                if (operator_get_pos(operator->carrier_operator)>>16 < operator->intensity){
+                    sample = operator_get_current_sample(operator->carrier_operator);
+                }else{
+                    sample = operator_get_current_sample(operator->modulator_operator);
+                }
+            } else if (operator->carrier_oscillator != NULL){
+                if (operator->carrier_oscillator->pos>>16 < operator->intensity){
+                    sample = oscillator_get_current_sample(operator->carrier_oscillator);
+                }else{
+                    sample = oscillator_get_current_sample(operator->modulator_oscillator);
+                }
+            }
             break;
 
         case CARRIER:

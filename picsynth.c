@@ -1,3 +1,14 @@
+//TODO: make sample advance voice based, as well as start stop
+// FIX voice addding code
+// make all values have two sets -> static and oscillator
+// add operator get_modulator and get_carrier functiions
+// same for filter, voices, etc
+// ERM.... in operator set frequency, rn does not handle if modulation operator and oscillator...
+//finish DX7 compatability
+//maybe abstract all platform dependant code to seperate file, then spam #ifdefs for win compat
+//CLEAN!!!
+
+
 //TODO: interpolation
 //FIX voice adding code
 //saw wave, triangle wave, etc...
@@ -7,7 +18,7 @@
 
 #define WAVE_TABLE_LEN 2048
 #define SAMPLES_PER_BUFFER 256
-#define SAMPLE_RATE 44000
+#define SAMPLE_RATE 22000
 
 //#define PICO_AUDIO_I2S_DATA_PIN
 //#define PICO_AUDIO_I2S_CLOCK_PIN_BASE
@@ -40,6 +51,7 @@
 #include "voices.c"
 #include "lcd_lib.c"
 #include "display.c"
+#include "interface.c"
 
 
 bi_decl(bi_3pins_with_names(
@@ -115,6 +127,7 @@ int main(void) {
     struct audio_buffer_pool *ap = init_audio();
 
     display_init();
+    interface_init();
 
     waves_load();
 
@@ -230,6 +243,7 @@ int main(void) {
     uint i = 0;
     while (true) {
         input_read();
+        interface_update();
         
         /*adc = (input_read_adc()>>9);
         if (adc != prev_adc){
@@ -246,7 +260,7 @@ int main(void) {
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_A, 2);
+                            freq = scale_get_frequency(Note_A, 5);
                             break;
                         case 1:
                             freq = scale_get_frequency(Note_C, 2);

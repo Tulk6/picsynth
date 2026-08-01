@@ -62,6 +62,7 @@ target_compile_definitions(picsynth PRIVATE
     PICO_AUDIO_I2S_MONO_INPUT=1
     PICO_AUDIO_I2S_DATA_PIN=20
     PICO_AUDIO_I2S_CLOCK_PIN_BASE=18
+    PICO
 )
 
 # Add the standard include files to the build
