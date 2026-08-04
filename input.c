@@ -10,8 +10,7 @@ uint n_selectors = 3;*/
 uint8_t current_state = 0;
 uint8_t prev_state = 0;
 
-int re_pos;
-uint8_t old_re_state;
+uint8_t re_buffer = 0;
 
 const int8_t quad_table[16] = {
   0,   // 0000: No change (stable)
@@ -33,15 +32,34 @@ const int8_t quad_table[16] = {
 };
 
 void input_re(uint gpio, uint32_t event_mask){
-    uint8_t state = (gpio_get(RE_CLK)<<1)|(gpio_get(RE_DT));
+    /*uint8_t state = (gpio_get(RE_CLK)<<1)|(gpio_get(RE_DT));
     uint8_t quad = ((old_re_state & 0x03) << 2) | (state & 0x03);
     old_re_state = state;
-    int delta = quad_table[quad & 0x0F];
-    re_pos += delta;
+    re_delta = quad_table[quad & 0x0F];
+    re_pos += re_delta;*/
+}
+
+int8_t input_test_re(){
+    uint8_t clk = gpio_get(RE_CLK);
+    if (clk == 0){
+        re_buffer = (re_buffer<<1) | clk;
+        if (re_buffer==0b10000000){
+            re_buffer = 0;
+            if (gpio_get(RE_DT)){
+                return 1;
+            }else{
+                return -1;
+            }
+        }
+        return 0;
+    }
+    else{
+        re_buffer = 1;
+        return 0;
+    }
 }
 
 void input_init(){
-    re_pos = 0;
     /*adc_init();
     adc_gpio_init(26);
     adc_select_input(0);*/
@@ -54,12 +72,12 @@ void input_init(){
     gpio_init(RE_CLK);
     gpio_set_dir(RE_CLK, GPIO_IN);
     gpio_pull_up(RE_CLK);
-    gpio_set_irq_enabled_with_callback(RE_CLK, GPIO_IRQ_EDGE_RISE, true, &input_re);
+    //gpio_set_irq_enabled_with_callback(RE_CLK, GPIO_IRQ_EDGE_RISE, true, &input_re);
 
     gpio_init(RE_DT);
     gpio_set_dir(RE_DT, GPIO_IN);
     gpio_pull_up(RE_DT);
-    gpio_set_irq_enabled_with_callback(RE_DT, GPIO_IRQ_EDGE_RISE, true, &input_re);
+    //gpio_set_irq_enabled_with_callback(RE_DT, GPIO_IRQ_EDGE_RISE, true, &input_re);
 
     for (int i=0;i<n_buttons;i++){
         uint pin = button_pins[i];
@@ -93,6 +111,19 @@ uint input_read(){
         state = state | (button_state<<i);
     }
 
+    //two bits a b
+    //if a, then re has rotated, b indicates direction
+    //if not a, then re clicked
+    int8_t re_state = input_test_re();
+    if (re_state != 0){
+        state = state | (1 << n_buttons+1);
+        if (re_state == -1){
+            state = state | (1 << n_buttons);
+        }
+    }else{
+        state = state | (gpio_get(RE_SW) << n_buttons);
+    }
+
     /*for (int i=0;i<n_selectors;i++){
         uint pin = selector_pins[i];
         uint button_state = (uint) !(gpio_get(pin));
@@ -123,4 +154,14 @@ bool input_button_pressed(uint n){
 
 bool input_button_released(uint n){
     return !input_button_state(n) & input_button_prev(n);
+}
+
+bool input_dial_rotated(){
+    return input_button_state(n_buttons+1);
+}
+
+int8_t input_dial_rotation(){
+    if (!input_dial_rotated()) return 0;
+    if (input_button_state(n_buttons)) return -1;
+    return 1;
 }
