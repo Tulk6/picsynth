@@ -35,9 +35,10 @@ void interface_init(){
 };
 
 void interface_update(){
-    if (input_dial_rotated()){
-        interface_index += input_dial_rotation();
-        printf("yippe!! %i", interface_index);
+    if (re_delta != 0){
+        interface_index += re_delta;
+        re_delta = 0;
+        
         if (interface_index < 0) interface_index = interface_nmenus - 1;
         else if (interface_index >= interface_nmenus) interface_index = 0;
         display_top_line(interface_menus[interface_index]);

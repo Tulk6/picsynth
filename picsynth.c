@@ -56,8 +56,8 @@
 #include "voices.c"
 #include "lcd_lib.c"
 #include "display.c"
-#include "interface.c"
 #include "algorithms.c"
+#include "interface.c"
 
 
 bi_decl(bi_3pins_with_names(
