@@ -44,6 +44,8 @@
 #include "pico/audio_i2s.h"
 #include "pico/rand.h"
 
+#include "lcd_1602_i2c.c"
+
 #include "wavetable.c"
 #include "sample.c"
 #include "waves.c"
@@ -54,7 +56,6 @@
 #include "scale.c"
 #include "input.c"
 #include "voices.c"
-#include "lcd_lib.c"
 #include "display.c"
 #include "algorithms.c"
 #include "interface.c"
@@ -126,10 +127,12 @@ int main(void) {
     stdio_init_all();
     input_init();
 
-    /*while (true){
-        if (getchar_timeout_us(0) >= 0) break;
-    }*/
     
+
+    while (true){
+        if (getchar_timeout_us(0) >= 0) break;
+    }
+   lcd_main();
     struct audio_buffer_pool *ap = init_audio();
 
     display_init();
