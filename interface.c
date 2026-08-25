@@ -28,6 +28,16 @@ int interface_index = 0;
 int interface_nmenus = 2;
 char* interface_menus[] = {"hello", "goodbye"};
 
+/*
+    interface_select_options
+    interface_select_value
+*/
+
+
+int8_t interface_options_menu(char** options){
+    
+}
+
 
 
 void interface_init(){
