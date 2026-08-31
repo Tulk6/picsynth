@@ -1,3 +1,5 @@
+//adapted slightly so that turning off backlight does NOT turn off display
+
 /*
  * Reference:
  * https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
@@ -388,9 +390,7 @@ void lcd_set_blinking(LCD* lcd_inst, uint8_t set_blinking){
 }
 
 void lcd_set_backlight(LCD* lcd_inst, uint8_t set_backlight) {
-    // Turn both backlight and display on/off at the same time
     lcd_inst->status.backlight_on = set_backlight;
-    lcd_inst->status.display_on = set_backlight;
 
     // Make use of display, so we preserve the state of the memory
     lcd_send_byte(lcd_inst, LCD_DISPLAYCONTROL, LCD_COMMAND_MODE, FAST_DELAY);
