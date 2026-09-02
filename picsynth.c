@@ -26,6 +26,8 @@
 #define SAMPLES_PER_BUFFER 256
 #define SAMPLE_RATE 22000
 
+struct VoiceBank voice_bank;
+
 //#define PICO_AUDIO_I2S_DATA_PIN
 //#define PICO_AUDIO_I2S_CLOCK_PIN_BASE
 
@@ -58,6 +60,7 @@
 #include "voices.c"
 #include "display.c"
 #include "algorithms.c"
+#include "gizmo.c"
 #include "interface.c"
 
 
@@ -140,9 +143,8 @@ int main(void) {
 
     waves_load();
 
-    struct VoiceBank voice_bank;
     voices_init(&voice_bank);
-    voices_load(&voice_bank, 2);
+    voices_load(&voice_bank, 5);
 
     /*struct WaveTable sine_wave;
     wavetable_init(&sine_wave);
@@ -262,27 +264,27 @@ int main(void) {
             voices_set_intensity(&voice_bank, adc);
         }*/
         if (input_just_pressed()){
-            for (int j=0;j<n_buttons;j++){
-                if (input_button_pressed(j)){
+            for (int j=0;j<n_keys;j++){
+                if (input_key_pressed(j)){
                     printf("just pressed %i\n", j);
                     struct Voice* voice = voices_acquire(&voice_bank);
                     voice->trigger = j;
                     float freq = 0;
                     switch (j){
                         case 0:
-                            freq = scale_get_frequency(Note_A, 5);
+                            freq = scale_get_frequency(Note_C, 4);
                             break;
                         case 1:
-                            freq = scale_get_frequency(Note_C, 2);
+                            freq = scale_get_frequency(Note_D, 4);
                             break;
                         case 2:
-                            freq = scale_get_frequency(Note_C, 3);
+                            freq = scale_get_frequency(Note_Eb, 4);
                             break;
                         case 3:
-                            freq = scale_get_frequency(Note_E, 2);
+                            freq = scale_get_frequency(Note_F, 4);
                             break;
                         case 4:
-                            freq = scale_get_frequency(Note_E, 3);
+                            freq = scale_get_frequency(Note_G, 4);
                             break;
                     }
                     printf("a");
@@ -290,7 +292,7 @@ int main(void) {
                     printf("b");
                     voice_start(voice);
                     printf("c");
-                }else if (input_button_released(j)){
+                }else if (input_key_released(j)){
                     for (int k=0;k<voice_bank.n_voices;k++){
                         struct Voice* voice = voice_bank.voices[k];
                         if (voice->trigger==j){

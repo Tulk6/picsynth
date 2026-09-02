@@ -13,6 +13,7 @@ struct VoiceBank {
 struct Voice {
     uint8_t trigger;
     uint8_t group;
+    bool active;
     
     struct Operator* operator_a;
     struct Operator* operator_b;
@@ -43,6 +44,7 @@ void voices_init(struct VoiceBank* voice_bank){
 void voice_init(struct Voice* voice){
     voice->trigger = 0;
     voice->group = 0;
+    voice->active = false;
 
     voice->operator_a = NULL;
     voice->operator_b = NULL;
@@ -162,7 +164,7 @@ void voices_set_frequency_ratio(struct VoiceBank* voice_bank, float frequency_ra
 struct Voice* voices_acquire(struct VoiceBank* voice_bank){
     for (uint i=0; i<voice_bank->n_voices; i++){
         struct Voice* voice = voice_bank->voices[i];
-        //if (voice->output_operator != NULL && voice->output_operator->envelope->state == STOPPED) return voice_bank->voices[i];
+        if (!voice->active) return voice_bank->voices[i];
     }
     return voice_bank->voices[0];
 }
@@ -170,6 +172,7 @@ struct Voice* voices_acquire(struct VoiceBank* voice_bank){
 int16_t voice_get_sample(struct Voice* voice){
     int16_t sample = 0;
     sample = operator_get_mix_sample(voice->operator_a);
+    //if (sample == 0)  voice->active = false;
     return sample;
 }
 
@@ -210,6 +213,7 @@ void voices_get_samples(struct VoiceBank* voice_bank, int16_t* samples, uint n_s
 }
 
 void voice_start(struct Voice* voice){
+    voice->active = true;
     oscillator_start(voice->oscillator_a);
     oscillator_start(voice->oscillator_b);
     oscillator_start(voice->oscillator_c);
@@ -225,6 +229,7 @@ void voice_start(struct Voice* voice){
 }
 
 void voice_stop(struct Voice* voice){
+    voice->active = false;
     oscillator_stop(voice->oscillator_a);
     oscillator_stop(voice->oscillator_b);
     oscillator_stop(voice->oscillator_c);

@@ -15,7 +15,7 @@ struct Algorithm algo_mode_gemini = {
         {.node=OSCILLATOR_C, .parameter=WAVEFORM, .value_node=SQUARE_WAVE},
 
         {.node=OPERATOR_A, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_C},
-        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=CARRIER},
+        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=PHASE_MODULATION},
         {.node=OPERATOR_A, .parameter=VOLUME, .value_int16=32767},
         {.node=OPERATOR_A, .parameter=MIX, .value_int16=1024},
         {.node=OPERATOR_A, .parameter=FILTER, .value_node=FILTER_A},
@@ -24,37 +24,66 @@ struct Algorithm algo_mode_gemini = {
 };
 
 
-int interface_index = 0;
-int interface_nmenus = 2;
-char* interface_menus[] = {"hello", "goodbye"};
-
-/*
-    interface_select_options
-    interface_select_value
-*/
 
 
-int8_t interface_options_menu(char** options){
-    
-}
+struct GizmoList main_menu;
+uint8_t main_menu_index;
 
+struct GizmoList waveform_menu;
+uint8_t waveform_menu_index;
 
+uint8_t ratio;
+uint8_t intensity;
+
+int8_t current_menu;
 
 void interface_init(){
-    
+    main_menu = gizmo_split_string("Waveform;Ratio;Intensity", ";");
+    waveform_menu = gizmo_split_string("Sine;Square;Saw;Triangle", ";");
 };
 
 void interface_update(){
-    if (re_delta != 0){
-        interface_index += re_delta;
-        re_delta = 0;
-        
-        if (interface_index < 0) interface_index = interface_nmenus - 1;
-        else if (interface_index >= interface_nmenus) interface_index = 0;
-        display_top_line(interface_menus[interface_index]);
-    }
-    if (input_button_pressed(5)){
-        display_clear();
+    switch (current_menu){
+        case 0:
+            gizmo_options_menu(&main_menu, &main_menu_index);
+            if (input_button_pressed(0)) current_menu = main_menu_index+1;
+            break;
+
+        case 1:
+            if (gizmo_options_menu(&waveform_menu, &waveform_menu_index) == RESULT_CHANGED){
+                struct Algorithm algo = {
+                    .settings = {
+                        {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=(enum VoiceValue)(16+waveform_menu_index)}
+                    }
+                };
+                algorithm_apply(&algo, &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+
+        case 2:
+            if (gizmo_value_menu(&ratio) == RESULT_CHANGED){
+                struct Algorithm algo = {
+                    .settings = {
+                        {.node=OPERATOR_A, .parameter=FREQUENCY_RATIO, .value_float=(float)ratio/64}
+                    }
+                };
+                algorithm_apply(&algo, &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+
+        case 3:
+            if (gizmo_value_menu(&intensity) == RESULT_CHANGED){
+                struct Algorithm algo = {
+                    .settings = {
+                        {.node=OPERATOR_A, .parameter=FUNCTION_INTENSITY, .value_int16=intensity*10}
+                    }
+                };
+                algorithm_apply(&algo, &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
     }
 };
 

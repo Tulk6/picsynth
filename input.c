@@ -1,18 +1,25 @@
-uint n_buttons = 5;
-uint button_pins[] = {11, 12, 13, 14, 15};
-
-/*uint selector_pins[] = {8, 9, 10};
-uint n_selectors = 3;*/
 #define RE_CLK 8
 #define RE_DT 9
-#define RE_SW 10
 
-uint8_t current_state = 0;
-uint8_t prev_state = 0;
+struct InputState {
+    uint8_t prev_key_state;
+    uint8_t key_state;
 
-int re_pos;
-int re_delta;
-uint8_t old_re_state;
+    uint8_t prev_button_state;
+    uint8_t button_state;
+
+
+    int8_t re_delta;
+    int8_t re_state;
+};
+
+struct InputState input_state;
+
+uint n_keys = 5;
+uint key_pins[] = {11, 12, 13, 14, 15};
+
+uint n_buttons = 1;
+uint button_pins[] = {10};
 
 const int8_t quad_table[16] = {
   0,   // 0000: No change (stable)
@@ -35,22 +42,15 @@ const int8_t quad_table[16] = {
 
 void input_re(uint gpio, uint32_t event_mask){
     uint8_t state = (gpio_get(RE_CLK)<<1)|(gpio_get(RE_DT));
-    uint8_t quad = ((old_re_state & 0x03) << 2) | (state & 0x03);
-    old_re_state = state;
-    re_delta = quad_table[quad & 0x0F];
-    re_pos += re_delta;
+    uint8_t quad = ((input_state.re_state & 0x03) << 2) | (state & 0x03);
+    input_state.re_state = state;
+    input_state.re_delta = quad_table[quad & 0x0F];
 }
 
 void input_init(){
-    re_pos = 0;
     /*adc_init();
     adc_gpio_init(26);
-    adc_select_input(0);*/
-
-    gpio_init(RE_SW);
-    gpio_set_dir(RE_SW, GPIO_IN);
-    gpio_pull_up(RE_SW);
-    
+    adc_select_input(0);*/    
 
     gpio_init(RE_CLK);
     gpio_set_dir(RE_CLK, GPIO_IN);
@@ -62,19 +62,19 @@ void input_init(){
     gpio_pull_up(RE_DT);
     gpio_set_irq_enabled_with_callback(RE_DT, GPIO_IRQ_EDGE_RISE, true, &input_re);
 
+    for (int i=0;i<n_keys;i++){
+        uint pin = key_pins[i];
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_IN);
+        gpio_pull_up(pin);
+    }
+
     for (int i=0;i<n_buttons;i++){
         uint pin = button_pins[i];
         gpio_init(pin);
         gpio_set_dir(pin, GPIO_IN);
         gpio_pull_up(pin);
     }
-
-    /*for (int i=0;i<n_selectors;i++){
-        uint pin = selector_pins[i];
-        gpio_init(pin);
-        gpio_set_dir(pin, GPIO_IN);
-        gpio_pull_up(pin);
-    }*/
 }
 
 uint16_t input_read_adc(){
@@ -87,14 +87,23 @@ uint16_t input_read_adc(){
 }
 
 uint input_read(){
-    uint state = 0;
+    uint key_states = 0;
+    for (int i=0;i<n_keys;i++){
+        uint pin = key_pins[i];
+        uint key_state = (uint) !(gpio_get(pin));
+        key_states = key_states | (key_state<<i);
+    }
+    input_state.prev_key_state = input_state.key_state;
+    input_state.key_state = key_states;
+
+    uint button_states = 0;
     for (int i=0;i<n_buttons;i++){
         uint pin = button_pins[i];
         uint button_state = (uint) !(gpio_get(pin));
-        state = state | (button_state<<i);
+        button_states = button_state | (button_state<<i);
     }
-
-    state = state | (gpio_get(RE_SW)<<n_buttons);
+    input_state.prev_button_state = input_state.button_state;
+    input_state.button_state = button_states;
 
     /*for (int i=0;i<n_selectors;i++){
         uint pin = selector_pins[i];
@@ -104,20 +113,38 @@ uint input_read(){
 
     //state = gpio_get(11);
     //printf("state: %u\n", state);
-    prev_state = current_state;
-    current_state = state;
+    
 }
 
 bool input_just_pressed(){
-    return current_state != prev_state;
+    return input_state.key_state != input_state.prev_key_state;
 }
 
+bool input_key_state(uint n){
+    return (bool) ((input_state.key_state>>n) & 1);
+}
+
+bool input_key_prev(uint n){
+    return (bool) ((input_state.prev_key_state>>n) & 1);
+}
+
+bool input_key_pressed(uint n){
+    return input_key_state(n) & !input_key_prev(n);
+}
+
+bool input_key_released(uint n){
+    return !input_key_state(n) & input_key_prev(n);
+}
+
+
+//buttons
+
 bool input_button_state(uint n){
-    return (bool) ((current_state>>n) & 1);
+    return (bool) ((input_state.button_state>>n) & 1);
 }
 
 bool input_button_prev(uint n){
-    return (bool) ((prev_state>>n) & 1);
+    return (bool) ((input_state.prev_button_state>>n) & 1);
 }
 
 bool input_button_pressed(uint n){

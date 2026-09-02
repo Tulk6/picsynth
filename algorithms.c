@@ -102,17 +102,18 @@ struct Algorithm algo1 = {
         {.node=ENVELOPE_A, .parameter=OSCILLATOR_FREQUENCY, .value_float=1},
         {.node=ENVELOPE_A, .parameter=LOOP_TYPE, .value_int16=NO_LOOP},
 
-        {.node=FILTER_A, .parameter=FILTER_TYPE, .value_filter=TEST},
-        {.node=FILTER_A, .parameter=FILTER_INTENSITY, .value_node=ENVELOPE_A},
+        {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SINE_WAVE},
+        {.node=OSCILLATOR_C, .parameter=WAVEFORM, .value_node=SINE_WAVE},
 
-        {.node=OSCILLATOR_C, .parameter=WAVEFORM, .value_node=SQUARE_WAVE},
-
-        {.node=OPERATOR_A, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_C},
-        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=CARRIER},
+        {.node=OPERATOR_A, .parameter=CARRIER_OSCILLATOR, .value_node=OSCILLATOR_A},
+        {.node=OPERATOR_A, .parameter=FREQUENCY_RATIO, .value_float = 3},
+        {.node=OPERATOR_A, .parameter=FUNCTION_INTENSITY, .value_int16=1500},
+        {.node=OPERATOR_A, .parameter=MODULATOR_OSCILLATOR, .value_node=OSCILLATOR_C},
+        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=PHASE_MODULATION},
         {.node=OPERATOR_A, .parameter=VOLUME, .value_int16=32767},
-        {.node=OPERATOR_A, .parameter=MIX, .value_int16=1024},
-        {.node=OPERATOR_A, .parameter=FILTER, .value_node=FILTER_A},
-        //{.node=OPERATOR_A, .parameter=ENVELOPE_OSCILLATOR, .value_node=ENVELOPE_A},
+        {.node=OPERATOR_A, .parameter=MIX, .value_int16=2048},
+
+        {.node=OPERATOR_A, .parameter=ENVELOPE_OSCILLATOR, .value_node=ENVELOPE_A}
     }
 };
 
