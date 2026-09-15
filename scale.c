@@ -32,7 +32,7 @@ enum MusicalNote {
     Note_B = 11
 };
 
-float scale_get_ratio(int note_dif){
+float scale_get_ratio(int8_t note_dif){
     return pow(NOTE_RATIO, note_dif);
 }
 
