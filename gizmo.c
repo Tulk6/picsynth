@@ -1,3 +1,4 @@
+char gizmo_blocks[] = {' ', '1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 enum GIZMO_RESULT {
     RESULT_NONE,
     RESULT_CHANGED,
@@ -96,6 +97,45 @@ enum GIZMO_RESULT gizmo_value_menu(uint8_t* value){
     return result;
 }
 
+enum GIZMO_RESULT gizmo_swing_menu(int8_t* value){
+    enum GIZMO_RESULT result = RESULT_NONE;
+    if (input_state.re_delta != 0){
+        *value += input_state.re_delta; //we dont care about over/underflow
+        input_state.re_delta = 0;
+        display_clear_bottom();
+        result = RESULT_CHANGED;
+
+        int8_t start = 0;
+        int8_t len = (abs(*value))/16;
+        if (*value < 0){
+            start = (8-len);
+            
+            display_set_pos(1, start-1);
+        }else{
+            start = 8;
+
+            display_set_pos(1, 8+len);
+        }
+
+        int8_t end_char_index = (abs(*value)-(len*16));
+        char end_char = gizmo_blocks[end_char_index];
+
+        display_char(end_char);
+
+        printf("start: %i len: %i\n", start, len);
+
+        display_set_pos(1, start);
+        
+        for (int i=0;i<len;i++){
+            display_char('\xff');
+        }
+
+
+    }
+
+    return result;
+}
+
 enum GIZMO_RESULT gizmo_tone_menu(int8_t* value){
     enum GIZMO_RESULT result = RESULT_NONE;
     if (input_state.re_delta != 0){
@@ -108,6 +148,24 @@ enum GIZMO_RESULT gizmo_tone_menu(int8_t* value){
         asiprintf(&f_string, "%"PRIi8" \xec", *value);
         display_bottom_line(f_string);
         free(f_string);
+    }
+
+    return result;
+}
+
+enum GIZMO_RESULT gizmo_bool_menu(bool* value){
+    enum GIZMO_RESULT result = RESULT_NONE;
+    if (input_state.re_delta != 0){
+        *value = !*value; //we dont care about over/underflow
+        input_state.re_delta = 0;
+        display_clear_bottom();
+        result = RESULT_CHANGED;
+
+        if (*value){
+            display_bottom_line("On");
+        }else{
+            display_bottom_line("Off");
+        }
     }
 
     return result;
