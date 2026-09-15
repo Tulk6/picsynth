@@ -239,8 +239,9 @@ int16_t operator_get_current_sample(struct Operator* operator){
             break;
         
         case ADDITIVE:
-            int16_t adjusted_modulator_level = (operator->intensity * modulator_level)>>15;
-            sample = (carrier_level+modulator_level)>>1;
+            int16_t adjusted_modulator_level = ((int32_t)operator->intensity * modulator_level)>>15;
+            int16_t adjusted_carrier_level = ((int32_t)(INT16_MAX-operator->intensity) * carrier_level)>>15;
+            sample = (adjusted_modulator_level+adjusted_carrier_level)>>1;
             break;
 
         case PHASE_MODULATION:
