@@ -119,6 +119,11 @@ struct Algorithm algo1 = {
 };
 
 
+uint32_t envelope_int_from_adsr(uint8_t attack, uint8_t decay, uint8_t sustain, uint8_t release){
+    uint32_t adsr = (attack<<24) | (decay<<16) | (sustain<<8) | (release);
+    return adsr;
+}
+
 void* algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
     printf("hmm, what is a %i...\n", node_name);
     void* node = NULL;
@@ -307,6 +312,8 @@ void algorithm_voice_load_setting(struct AlgorithmSetting setting, struct Voice*
             wavetable_load_adsr_int(((struct Oscillator*) node)->wavetable, setting.value_uint32);
             oscillator_reload((struct Oscillator*) node);
             oscillator_set_frequency((struct Oscillator*) node, 1);
+            /*((struct Oscillator*) node)->loop_start = (setting.value_uint32>>24)+((setting.value_uint32 >> 16) & 255);
+            ((struct Oscillator*) node)->loop_stop = (setting.value_uint32>>24)+((setting.value_uint32 >> 16) & 255)+1;*/
             break;
 
 
