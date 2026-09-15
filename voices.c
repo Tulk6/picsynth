@@ -83,14 +83,14 @@ void voice_load(struct Voice* voice){
 
     voice->envelope_a = oscillator_new();
     oscillator_load(voice->envelope_a, wavetable_new());
-    //voice->envelope_a->loop_type = BAND;
+    voice->envelope_a->loop_type = NO_LOOP;
     voice->envelope_b = oscillator_new();
     oscillator_load(voice->envelope_b, wavetable_new());
-    //voice->envelope_b->loop_type = BAND;
+    voice->envelope_b->loop_type = NO_LOOP;
 
     voice->lfo_a = oscillator_new();
 
-    voice->filter_a = filter_new();
+    voice->filter_a = filter_new(LOW_PASS);
 }
 
 void voice_unload(struct Voice* voice){
