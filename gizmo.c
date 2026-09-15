@@ -52,16 +52,28 @@ void gizmo_safe_wrap(uint8_t* value, int8_t increment, int8_t bound){
     }
 }
 
-enum GIZMO_RESULT gizmo_options_menu(struct GizmoList* gizmo_list, uint8_t* index){
+enum GIZMO_RESULT gizmo_options_menu(struct GizmoList* gizmo_list, uint8_t* index, uint8_t line){
     enum GIZMO_RESULT result = RESULT_NONE;
     if (input_state.re_delta != 0){
         gizmo_safe_wrap(index, input_state.re_delta, gizmo_list->n_options-1);
         input_state.re_delta = 0;
-        display_clear_top();
+        if (line==0) display_clear_top();
+        else display_clear_bottom();
         result = RESULT_CHANGED;
 
         char* current_option = gizmo_list_get(gizmo_list, *index);
-        display_top_line(current_option);
+        display_set_pos(line, 0);
+    
+        display_write(current_option);
+        
+        display_char('<');
+
+        char* f_string;
+        asiprintf(&f_string, "%"PRIu8"/%"PRIu8, (*index+1), gizmo_list->n_options);
+        display_write(f_string);
+        free(f_string);
+
+        display_char('>');
     }
 
     return result;
@@ -77,6 +89,23 @@ enum GIZMO_RESULT gizmo_value_menu(uint8_t* value){
 
         char* f_string;
         asiprintf(&f_string, "%"PRIu8"", *value);
+        display_bottom_line(f_string);
+        free(f_string);
+    }
+
+    return result;
+}
+
+enum GIZMO_RESULT gizmo_tone_menu(int8_t* value){
+    enum GIZMO_RESULT result = RESULT_NONE;
+    if (input_state.re_delta != 0){
+        *value += input_state.re_delta; //we dont care about over/underflow
+        input_state.re_delta = 0;
+        display_clear_bottom();
+        result = RESULT_CHANGED;
+
+        char* f_string;
+        asiprintf(&f_string, "%"PRIi8" \xec", *value);
         display_bottom_line(f_string);
         free(f_string);
     }
