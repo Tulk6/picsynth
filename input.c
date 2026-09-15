@@ -41,7 +41,7 @@ const int8_t quad_table[16] = {
 };
 
 void input_re(uint gpio, uint32_t event_mask){
-    uint8_t state = (gpio_get(RE_CLK)<<1)|(gpio_get(RE_DT));
+    uint8_t state = (gpio_get(RE_DT)<<1)|(gpio_get(RE_CLK));
     uint8_t quad = ((input_state.re_state & 0x03) << 2) | (state & 0x03);
     input_state.re_state = state;
     input_state.re_delta = quad_table[quad & 0x0F];
