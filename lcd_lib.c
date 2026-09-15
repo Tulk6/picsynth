@@ -246,6 +246,8 @@ void lcd_shift_display(LCD* lcd_inst, uint8_t move_right, uint8_t amount);
  * Remember to bring cursor back
  */
 void lcd_shift_cursor(LCD* lcd_inst, uint8_t move_right, uint8_t amount);
+
+void lcd_create_char(LCD* lcd_inst, uint8_t location, uint8_t charmap[]);
 #endif //__LCD1602_I2C_H
 
 
@@ -275,7 +277,7 @@ void lcd_send_byte(LCD* lcd_inst, uint8_t val, uint8_t mode, uint64_t delay_us) 
         }
         else if (LCD_SETCGRAMADDR & val) {
             // TODO
-            return;
+            
         }
         else if (LCD_FUNCTIONSET & val) {
             // FORBIDDEN
@@ -411,3 +413,11 @@ void lcd_shift_cursor(LCD* lcd_inst, uint8_t move_right, uint8_t amount) {
     while (amount--)
         lcd_send_byte(lcd_inst, LCD_CURSORSHIFT, LCD_COMMAND_MODE, FAST_DELAY);
 }
+
+/*void lcd_create_char(LCD* lcd_inst, uint8_t location, uint8_t charmap[]){
+    location &= 0x80; // we only have 8 locations 0-7
+    lcd_send_byte(lcd_inst, LCD_SETCGRAMADDR,  (location << 3));
+    for (int i=0; i<8; i++) {
+        write(charmap[i]);
+    }
+}*/
