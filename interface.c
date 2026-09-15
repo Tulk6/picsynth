@@ -9,7 +9,7 @@ struct Algorithm algo_mode_gemini = {
         {.node=ENVELOPE_A, .parameter=OSCILLATOR_FREQUENCY, .value_float=1},
         {.node=ENVELOPE_A, .parameter=LOOP_TYPE, .value_int16=NO_LOOP},
 
-        {.node=FILTER_A, .parameter=FILTER_TYPE, .value_filter=TEST},
+        {.node=FILTER_A, .parameter=FILTER_TYPE, .value_filter=LOW_PASS},
         {.node=FILTER_A, .parameter=FILTER_INTENSITY, .value_node=ENVELOPE_A},
 
         {.node=OSCILLATOR_C, .parameter=WAVEFORM, .value_node=SQUARE_WAVE},
@@ -58,7 +58,7 @@ uint8_t mage_main_menu_index;
 
 void interface_init(){
     main_menu = gizmo_split_string("Waveform;Ratio;Intensity", ";");
-    mage_main_menu = gizmo_split_string("Waveform A;Waveform B;Mix;Detune;Filter;Vib. Depth;Vib. Rate;Attack;Decay;Sustain;Release;", ";");
+    mage_main_menu = gizmo_split_string("Waveform A;Waveform B;Mix;Detune;Filter;Vib. Depth;Vib. Rate;Gate;Attack;Decay;Sustain;Release;Env. Frq.;", ";");
     waveform_menu = gizmo_split_string("Sine;Square;Saw;Triangle", ";");
 
 
@@ -104,19 +104,23 @@ void interface_menu_duop(){
 }
 
 
-uint8_t mage_mix;
+int8_t mage_mix = 0;
 int8_t mage_detune;
 uint8_t mage_filter = 30;
 uint8_t mage_vibrato_depth;
 uint8_t mage_vibrato_rate;
+bool mage_gate = true;
 uint8_t mage_attack;
 uint8_t mage_decay;
 uint8_t mage_sustain;
 uint8_t mage_release;
+uint8_t mage_envelope_frequency;
 
 struct Algorithm mage_algorithm = {
     .settings={
-        {.node=FILTER_A, .parameter=FILTER_TYPE, .value_node=TEST},
+        {.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=0},
+        
+        {.node=FILTER_A, .parameter=FILTER_TYPE, .value_node=LOW_PASS},
         {.node=FILTER_A, .parameter=FILTER_INTENSITY, .value_int16=30<<7},
 
         {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SAW_WAVE},
@@ -170,9 +174,9 @@ void interface_menu_mage(){
             break;
 
         case 3:
-            if (gizmo_value_menu(&mage_mix) == RESULT_CHANGED){
+            if (gizmo_swing_menu(&mage_mix) == RESULT_CHANGED){
                 algorithm_apply_setting(
-                    (struct AlgorithmSetting){.node=OPERATOR_A, .parameter=MIX, .value_int16=mage_mix<<7},
+                    (struct AlgorithmSetting){.node=OPERATOR_A, .parameter=FUNCTION_INTENSITY, .value_int16=(mage_mix+128)<<7},
                      &voice_bank);
             }
             if (input_button_pressed(0)) current_menu = 0;
@@ -216,9 +220,64 @@ void interface_menu_mage(){
             break;
 
         case 8:
+            if (gizmo_bool_menu(&mage_gate) == RESULT_CHANGED){
+                if (mage_gate==false){
+                    algorithm_apply_setting(
+                        (struct AlgorithmSetting){.node=OPERATOR_B, .parameter=ENVELOPE_OSCILLATOR, .value_node=NO_NODE},
+                         &voice_bank);
+                }else{
+                    algorithm_apply_setting(
+                        (struct AlgorithmSetting){.node=OPERATOR_B, .parameter=ENVELOPE_OSCILLATOR, .value_node=ENVELOPE_A},
+                         &voice_bank);
+                }
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+        
+        case 9:
             if (gizmo_value_menu(&mage_attack) == RESULT_CHANGED){
+                uint32_t adsr = envelope_int_from_adsr(mage_attack, mage_decay, mage_sustain, mage_release);
                 algorithm_apply_setting(
-                    (struct AlgorithmSetting){.node=FILTER_A, .parameter=FILTER_INTENSITY, .value_int16=mage_filter<<7},
+                    (struct AlgorithmSetting){.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=adsr},
+                     &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+
+        case 10:
+            if (gizmo_value_menu(&mage_decay) == RESULT_CHANGED){
+                uint32_t adsr = envelope_int_from_adsr(mage_attack, mage_decay, mage_sustain, mage_release);
+                algorithm_apply_setting(
+                    (struct AlgorithmSetting){.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=adsr},
+                     &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+
+        case 11:
+            if (gizmo_value_menu(&mage_sustain) == RESULT_CHANGED){
+                uint32_t adsr = envelope_int_from_adsr(mage_attack, mage_decay, mage_sustain, mage_release);
+                algorithm_apply_setting(
+                    (struct AlgorithmSetting){.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=adsr},
+                     &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+
+        case 12:
+            if (gizmo_value_menu(&mage_release) == RESULT_CHANGED){
+                uint32_t adsr = envelope_int_from_adsr(mage_attack, mage_decay, mage_sustain, mage_release);
+                algorithm_apply_setting(
+                    (struct AlgorithmSetting){.node=ENVELOPE_A, .parameter=ADSR, .value_uint32=adsr},
+                     &voice_bank);
+            }
+            if (input_button_pressed(0)) current_menu = 0;
+            break;
+
+        case 13:
+            if (gizmo_value_menu(&mage_envelope_frequency) == RESULT_CHANGED){
+                algorithm_apply_setting(
+                    (struct AlgorithmSetting){.node=ENVELOPE_A, .parameter=OSCILLATOR_FREQUENCY, .value_float=(float)mage_envelope_frequency/2},
                      &voice_bank);
             }
             if (input_button_pressed(0)) current_menu = 0;
