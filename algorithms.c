@@ -36,6 +36,7 @@ enum VoiceParameter {
 
     //filter_parameters
     FILTER_TYPE,
+    FILTER_OSCILLATOR,
     FILTER_INTENSITY,
 
     //voice parameters
@@ -225,102 +226,109 @@ void* algorithm_node_name(struct Voice* voice, enum VoiceValue node_name){
     return node;
 }
 
+void algorithm_voice_load_setting(struct AlgorithmSetting setting, struct Voice* voice){
+    if (setting.node == NO_NODE || setting.parameter == NO_PARAMETER) return;
+    printf("finding node...\n");
+    void* node = algorithm_node_name(voice, setting.node);
+    if (node == NULL) return;
+    printf("finding parameter\n");
+    enum VoiceParameter parameter = setting.parameter;
+    void* value_node = algorithm_node_name(voice, setting.value_node);
+    switch (parameter){
+        case CARRIER_OPERATOR:
+            ((struct Operator*) node)->carrier_operator = (struct Operator*) value_node;
+            break;
+
+        case CARRIER_OSCILLATOR:
+            ((struct Operator*) node)->carrier_oscillator = (struct Oscillator*) value_node;
+            break;
+
+        case MODULATOR_OPERATOR:
+            ((struct Operator*) node)->modulator_operator = (struct Operator*) value_node;
+            break;
+
+        case MODULATOR_OSCILLATOR:
+            ((struct Operator*) node)->modulator_oscillator = (struct Oscillator*) value_node;
+            break;
+
+        case ENVELOPE_OSCILLATOR:
+            ((struct Operator*) node)->envelope_oscillator = (struct Oscillator*) value_node;
+            break;
+
+        case OPERATOR_FUNCTION:
+            ((struct Operator*) node)->mode = setting.value_mode;
+            break;
+
+        case FUNCTION_INTENSITY:
+            ((struct Operator*) node)->intensity = setting.value_int16;
+            break;
+
+        case VOLUME:
+            ((struct Operator*) node)->volume = setting.value_int16;
+            break;
+
+        case MIX:
+            ((struct Operator*) node)->mix = setting.value_int16;
+            break;
+
+        case FREQUENCY_RATIO:
+            ((struct Operator*) node)->frequency_ratio = setting.value_float;
+            break;
+
+        case OPERATOR_FREQUENCY:
+            operator_set_frequency((struct Operator*) node, setting.value_float);
+            break;
+
+        case FILTER:
+            ((struct Operator*) node)->filter = value_node;
+            break;
+
+        case OSCILLATOR_FREQUENCY:
+            oscillator_set_frequency((struct Oscillator*) node, setting.value_float);
+            break;
+
+        case WAVEFORM:
+            oscillator_load(((struct Oscillator*) node), value_node);
+            break;
+
+        case LOOP_TYPE:
+            ((struct Oscillator*) node)->loop_type = setting.value_loop;
+            break;
+
+        case LOOP_START:
+            ((struct Oscillator*) node)->loop_start = setting.value_int16;
+            break;
+
+        case LOOP_STOP:
+            ((struct Oscillator*) node)->loop_stop = setting.value_int16;
+            break;
+
+        case ADSR:
+            wavetable_load_adsr_int(((struct Oscillator*) node)->wavetable, setting.value_uint32);
+            oscillator_reload((struct Oscillator*) node);
+            oscillator_set_frequency((struct Oscillator*) node, 1);
+            break;
+
+
+        case FILTER_TYPE:
+            ((struct Filter*) node)->type = setting.value_filter;
+            break;
+        
+        case FILTER_OSCILLATOR:
+            ((struct Filter*) node)->intensity_oscillator = value_node;
+            break;
+
+        case FILTER_INTENSITY:
+            ((struct Filter*) node)->intensity_value = setting.value_int16;
+            break;
+    }
+}
 
 void algorithm_voice_load(struct Algorithm* algorithm, struct Voice* voice){
     for (int i=0; i<N_ALGORITHM_SETTINGS; i++){
         printf("LOOKING AT SETTING %i\n", i);
         struct AlgorithmSetting setting = algorithm->settings[i];
-        if (setting.node == NO_NODE || setting.parameter == NO_PARAMETER) continue;
-        printf("finding node...\n");
-        void* node = algorithm_node_name(voice, setting.node);
-        if (node == NULL) continue;
-        printf("finding parameter\n");
-        enum VoiceParameter parameter = setting.parameter;
-        void* value_node = algorithm_node_name(voice, setting.value_node);
-        switch (parameter){
-            case CARRIER_OPERATOR:
-                ((struct Operator*) node)->carrier_operator = (struct Operator*) value_node;
-                break;
-
-            case CARRIER_OSCILLATOR:
-                ((struct Operator*) node)->carrier_oscillator = (struct Oscillator*) value_node;
-                break;
-
-            case MODULATOR_OPERATOR:
-                ((struct Operator*) node)->modulator_operator = (struct Operator*) value_node;
-                break;
-
-            case MODULATOR_OSCILLATOR:
-                ((struct Operator*) node)->modulator_oscillator = (struct Oscillator*) value_node;
-                break;
-
-            case ENVELOPE_OSCILLATOR:
-                ((struct Operator*) node)->envelope = (struct Oscillator*) value_node;
-                break;
-
-            case OPERATOR_FUNCTION:
-                ((struct Operator*) node)->mode = setting.value_mode;
-                break;
-
-            case FUNCTION_INTENSITY:
-                ((struct Operator*) node)->intensity = setting.value_int16;
-                break;
-
-            case VOLUME:
-                ((struct Operator*) node)->volume = setting.value_int16;
-                break;
-
-            case MIX:
-                ((struct Operator*) node)->mix = setting.value_int16;
-                break;
-
-            case FREQUENCY_RATIO:
-                ((struct Operator*) node)->frequency_ratio = setting.value_float;
-                break;
-
-            case OPERATOR_FREQUENCY:
-                operator_set_frequency((struct Operator*) node, setting.value_float);
-                break;
-
-            case FILTER:
-                ((struct Operator*) node)->filter = value_node;
-                break;
-
-            case OSCILLATOR_FREQUENCY:
-                oscillator_set_frequency((struct Oscillator*) node, setting.value_float);
-                break;
-
-            case WAVEFORM:
-                oscillator_load(((struct Oscillator*) node), value_node);
-                break;
-
-            case LOOP_TYPE:
-                ((struct Oscillator*) node)->loop_type = setting.value_loop;
-                break;
-
-            case LOOP_START:
-                ((struct Oscillator*) node)->loop_start = setting.value_int16;
-                break;
-
-            case LOOP_STOP:
-                ((struct Oscillator*) node)->loop_stop = setting.value_int16;
-                break;
-
-            case ADSR:
-                wavetable_load_adsr_int(((struct Oscillator*) node)->wavetable, setting.value_uint32);
-                oscillator_reload((struct Oscillator*) node);
-                oscillator_set_frequency((struct Oscillator*) node, 1);
-                break;
-
-
-            case FILTER_TYPE:
-                ((struct Filter*) node)->type = setting.value_filter;
-                break;
-            
-            case FILTER_INTENSITY:
-                ((struct Filter*) node)->intensity_oscillator = value_node;
-                break;
-        }
+        algorithm_voice_load_setting(setting, voice);
     }
 }
 
@@ -328,6 +336,14 @@ void algorithm_apply(struct Algorithm* algorithm, struct VoiceBank* voice_bank){
     for (int i=0;i<voice_bank->n_voices;i++){
         if (voice_bank->voices[i] != NULL){
             algorithm_voice_load(algorithm, voice_bank->voices[i]);
+        } 
+    }
+}
+
+void algorithm_apply_setting(struct AlgorithmSetting setting, struct VoiceBank* voice_bank){
+    for (int i=0;i<voice_bank->n_voices;i++){
+        if (voice_bank->voices[i] != NULL){
+            algorithm_voice_load_setting(setting, voice_bank->voices[i]);
         } 
     }
 }
