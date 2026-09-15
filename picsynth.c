@@ -248,7 +248,7 @@ int main(void) {
     oscillator2.vol = vol;
     oscillator2.table = sine_wave_table;*/
 
-    algorithm_apply(&algo1, &voice_bank);
+    algorithm_apply(&mage_algorithm, &voice_bank);
     printf("algo applied!\n");
 
     
