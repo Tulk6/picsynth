@@ -171,7 +171,7 @@ struct Voice* voices_acquire(struct VoiceBank* voice_bank){
 
 int16_t voice_get_sample(struct Voice* voice){
     int16_t sample = 0;
-    sample = operator_get_mix_sample(voice->operator_a);
+    sample = operator_get_mix_sample(voice->operator_b);
     //if (sample == 0)  voice->active = false;
     return sample;
 }
@@ -226,6 +226,8 @@ void voice_start(struct Voice* voice){
 
     oscillator_start(voice->lfo_a);
     
+    operator_gate_on(voice->operator_a);
+    operator_gate_on(voice->operator_b);
 }
 
 void voice_stop(struct Voice* voice){
@@ -242,6 +244,8 @@ void voice_stop(struct Voice* voice){
 
     oscillator_stop(voice->lfo_a);
     
+    operator_gate_off(voice->operator_a);
+    operator_gate_off(voice->operator_b);
 }
 
 void voice_set_output_frequencies(struct Operator* operator, float frequency){

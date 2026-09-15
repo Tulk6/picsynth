@@ -12,9 +12,10 @@ struct Operator {
     struct Operator* modulator_operator;
     struct Oscillator* carrier_oscillator;
     struct Oscillator* modulator_oscillator;
-    struct Oscillator* envelope;
+    struct Oscillator* envelope_oscillator;
     struct Filter* filter;
     enum OperatorMode mode;
+    bool gate_on;
     int16_t volume;
     int16_t mix;
     int16_t intensity;
@@ -29,7 +30,8 @@ void operator_init(struct Operator* operator){
     operator->modulator_operator = NULL;
     operator->carrier_oscillator = NULL;
     operator->modulator_oscillator = NULL;
-    operator->envelope = NULL;
+    operator->envelope_oscillator = NULL;
+    operator->gate_on = false;
     operator->filter = NULL;
     operator->mode = MODE_NONE;
     operator->volume = 0;
@@ -59,9 +61,9 @@ void operator_unload(struct Operator* operator){
         operator_unload(operator->modulator_operator);
         operator->modulator_operator = NULL;
     }
-    if (operator->envelope != NULL){
-        oscillator_unload(operator->envelope);
-        operator->envelope = NULL;
+    if (operator->envelope_oscillator != NULL){
+        oscillator_unload(operator->envelope_oscillator);
+        operator->envelope_oscillator = NULL;
     }
     if (operator->carrier_oscillator != NULL){
         oscillator_unload(operator->carrier_oscillator);
@@ -90,6 +92,16 @@ int16_t operator_get_modulator_sample(struct Operator* operator){
         return operator_get_current_sample(operator->modulator_operator);
     }else if (operator->modulator_oscillator != NULL){
         return oscillator_get_current_sample(operator->modulator_oscillator);
+    }
+    return 0;
+}
+
+int16_t operator_get_envelope_sample(struct Operator* operator){
+    if (operator->gate_on == true){
+        if (operator->envelope_oscillator != NULL){
+            return abs(oscillator_get_current_sample(operator->envelope_oscillator));
+        }
+        return INT16_MAX;
     }
     return 0;
 }
@@ -167,6 +179,11 @@ void operator_change_pos(struct Operator* operator, int32_t delta_pos){
     }else if (operator->carrier_operator != NULL){
         operator_change_pos(operator->carrier_operator, delta_pos);
     } 
+    if (operator->modulator_oscillator != NULL){
+        oscillator_set_pos(operator->modulator_oscillator, operator->modulator_oscillator->pos+delta_pos);
+    }else if (operator->modulator_operator != NULL){
+        operator_change_pos(operator->modulator_operator, delta_pos);
+    }
 }
 
 /*void operator_start(struct Operator* operator){
@@ -229,7 +246,8 @@ int16_t operator_get_current_sample(struct Operator* operator){
         case PHASE_MODULATION:
             int32_t step_size = 0;
             step_size = (operator->intensity*modulator_level)>>2;
-            operator_change_pos(operator, step_size);
+            if (operator->carrier_operator != NULL) operator_change_pos(operator->carrier_operator, step_size);
+            if (operator->carrier_oscillator != NULL) oscillator_set_pos(operator->carrier_oscillator, operator->carrier_oscillator->pos+step_size);
             sample = carrier_level;
             break;
 
@@ -261,10 +279,8 @@ int16_t operator_get_current_sample(struct Operator* operator){
         sample = filter_apply(operator->filter, sample);
     }
     
-    if (operator->envelope != NULL){
-        int16_t envelope_level = abs(oscillator_get_current_sample(operator->envelope));
+    int16_t envelope_level = operator_get_envelope_sample(operator);//abs(oscillator_get_current_sample(operator->envelope));
         sample = (sample*envelope_level) >> 15;
-    }
 
     sample = (sample*operator->volume) >> 15;
     if (sample > operator->volume) sample = 0;
@@ -274,6 +290,14 @@ int16_t operator_get_current_sample(struct Operator* operator){
 
 int16_t operator_get_mix_sample(struct Operator* operator){
     return (operator_get_current_sample(operator)*operator->mix)>>15;
+}
+
+void operator_gate_on(struct Operator* operator){
+    operator->gate_on = true;
+}
+
+void operator_gate_off(struct Operator* operator){
+    operator->gate_on = false;
 }
 
 /*void operator_advance_sample(struct Operator* operator){
