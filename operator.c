@@ -264,7 +264,7 @@ int16_t operator_get_current_sample(struct Operator* operator){
                 pos = operator->carrier_oscillator->pos>>16;
             }
 
-            if (pos < operator->intensity){
+            if (pos < abs(operator->intensity)){
                 sample = carrier_level;
             }else{
                 sample = modulator_level;
