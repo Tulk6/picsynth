@@ -70,11 +70,11 @@ enum VoiceValue {
     SQUARE_WAVE,
     SAW_WAVE,
     TRIANGLE_WAVE,
-    SAMPLE_WAVE,
-    ENVELOPE_WAVE,
     HIGH_WAVE,
     LOW_WAVE,
     NOISE_WAVE,
+    SAMPLE_WAVE,
+    ENVELOPE_WAVE,
 
     VOICE
 };
@@ -312,8 +312,8 @@ void algorithm_voice_load_setting(struct AlgorithmSetting setting, struct Voice*
             wavetable_load_adsr_int(((struct Oscillator*) node)->wavetable, setting.value_uint32);
             oscillator_reload((struct Oscillator*) node);
             oscillator_set_frequency((struct Oscillator*) node, 1);
-            /*((struct Oscillator*) node)->loop_start = (setting.value_uint32>>24)+((setting.value_uint32 >> 16) & 255);
-            ((struct Oscillator*) node)->loop_stop = (setting.value_uint32>>24)+((setting.value_uint32 >> 16) & 255)+1;*/
+            ((struct Oscillator*) node)->loop_start = ((setting.value_uint32>>24)+((setting.value_uint32 >> 16) & 255))<<16;
+            ((struct Oscillator*) node)->loop_stop = ((setting.value_uint32>>24)+((setting.value_uint32 >> 16) & 255)+1)<<16;
             break;
 
 
