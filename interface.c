@@ -23,16 +23,16 @@ struct Algorithm algo_mode_gemini = {
     }
 };
 
-struct Algorithm algo_mode_mage = {
+/*struct Algorithm algo_mode_mage = {
     .settings = {
         {.node=OSCILLATOR_A, .parameter=WAVEFORM, .value_node=SINE_WAVE},
 
         {.node=OSCILLATOR_B, .parameter=WAVEFORM, .value_node=SQUARE_WAVE},
 
-        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=ADDITIVE},
+        {.node=OPERATOR_A, .parameter=OPERATOR_FUNCTION, .value_mode=PHASE_MODULATION},
         //{.node=}
     }
-};
+};*/
 
 
 uint8_t current_mode = 1;
@@ -59,7 +59,7 @@ uint8_t mage_main_menu_index;
 void interface_init(){
     main_menu = gizmo_split_string("Waveform;Ratio;Intensity", ";");
     mage_main_menu = gizmo_split_string("Waveform A;Waveform B;Mix;Detune;Filter;Vib. Depth;Vib. Rate;Gate;Attack;Decay;Sustain;Release;Env. Frq.;", ";");
-    waveform_menu = gizmo_split_string("Sine;Square;Saw;Triangle", ";");
+    waveform_menu = gizmo_split_string("Sine;Square;Saw;Triangle;High;Low;Noise;", ";");
 
 
 };
